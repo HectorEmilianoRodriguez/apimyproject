@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call(LabelSeeder::class);
         $this->call(GroupTaskCoordinatorLeaderSeeder::class);
         $this->call(activitycoordinatorleaderSeeder::class);
+        $this->call(relcardlabelSeeder::class);
 
         
     }
