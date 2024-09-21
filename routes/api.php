@@ -74,7 +74,10 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('/pdf/ProductivityReport', [ReportsController::class, 'ProductivityReport']); // reporte de productividad
     Route::get('/pdf/DeliveryActivitiesReport', [ReportsController::class, 'DeliveryActivitiesReport']); // reporte de plazos de entrega para miembros
     Route::get('/pdf/DeliveryActivitiesReportCoordinator', [ReportsController::class, 'DeliveryActivitiesReportCoordinator']); // reporte de plazos de entrega para coordinadores
+    Route::get('/pdf/PendingActivitiesReport', [ReportsController::class, 'PendingActivitiesReport']); // reporte de actividades pendientes de un entorno.
+    Route::get('/pdf/CompletedActivitiesReport', [ReportsController::class, 'CompletedActivitiesReport']); // reporte de actividades completadas de un entorno.
     
+
 
 
 

@@ -22,9 +22,9 @@ class CardUsersFactory extends Factory
         $idcard = $this->faker->randomElement([1,5]);
         $idjoinuserwork = $this->faker->randomElement([1,5]);
      
-     while ($idcard == $idjoinuserwork) {
-        $idcard = $this->faker->randomElement([1, 5]);
-     }
+        while ($idcard == $idjoinuserwork) {
+            $idcard = $this->faker->randomElement([1, 5]);
+        }
 
     
         return [
