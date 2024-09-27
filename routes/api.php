@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\WorkEnvController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\MembersController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +78,14 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('/pdf/PendingActivitiesReport', [ReportsController::class, 'PendingActivitiesReport']); // reporte de actividades pendientes de un entorno.
     Route::get('/pdf/CompletedActivitiesReport', [ReportsController::class, 'CompletedActivitiesReport']); // reporte de actividades completadas de un entorno.
     
+    //CRUD Miembros
+    Route::get('/inviteMember/{email}/{workenv}/{idwork}', [MembersController::class, 'inviteMember']); // aceptar invitacion de un entorno.
+
+    Route::get('/acceptInvitationMember/{token}/{idwork}/', [MembersController::class, 'acceptInvitationMember']); // aceptar invitacion de un entorno.
+    Route::get('/getMembers/{idWorkEnv}', [MembersController::class, 'getMembers']); // devolver los miembros de un entorno de trabajo.
+    Route::delete('/deleteMember/{idUser}/{nameUser}/{emailmember}/{idWorkEnv}/{nameWork}', [MembersController::class, 'deleteMember']); // expulsar un miembro de un entorno.
+    Route::put('/updateMember/{idUser}/{idWorkEnv}/{privilege}', [MembersController::class, 'updateMember']); // actualizar privilegio de un miembro de un entorno.
+
 
 
 
