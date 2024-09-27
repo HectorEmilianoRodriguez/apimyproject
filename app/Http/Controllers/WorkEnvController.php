@@ -85,6 +85,7 @@ public function CountMyWorkEnvs()
         ->where('rel_join_workenv_users.idUser', $currentUser)
         ->where('rel_join_workenv_users.privilege', 2)
         ->where('cat_workenvs.logicdeleted', '!=', 1)
+        ->where('rel_join_workenv_users.approbed', '=', 1)
         ->count();
 
     // Contar los entornos donde el usuario es participante (privilege != 2) y no han sido archivados
@@ -92,6 +93,7 @@ public function CountMyWorkEnvs()
         ->where('rel_join_workenv_users.idUser', $currentUser)
         ->where('rel_join_workenv_users.privilege', '!=', 2)
         ->where('cat_workenvs.logicdeleted', '!=', 1)
+        ->where('rel_join_workenv_users.approbed', '=', 1)
         ->count();
 
     return response()->json([
@@ -176,7 +178,7 @@ public function CountMyWorkEnvs()
         $workenv->date_start = $request->input('date_start');
         $workenv->date_end = $request->input('date_end');
         $workenv->logicdeleted = $request->input(0);
-
+        
 
         if(WorkEnv::where('nameW', $request->input('nameW'))->first()){
 
@@ -300,6 +302,8 @@ public function CountMyWorkEnvs()
             ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
             ->where('rel_join_workenv_users.idUser', $idUser)
             ->where('cat_workenvs.idWorkEnv', $idWorkEnv)
+            ->where('rel_join_workenv_users.approbed', '=', 1)
+            ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
             ->first();
     
         // Si el resultado es null, significa que el usuario no está en ese entorno de trabajo
