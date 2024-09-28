@@ -177,7 +177,7 @@ public function CountMyWorkEnvs()
         $workenv->type = $request->input('type');
         $workenv->date_start = $request->input('date_start');
         $workenv->date_end = $request->input('date_end');
-        $workenv->logicdeleted = $request->input(0);
+        $workenv->logicdeleted = 0;
         
 
         if(WorkEnv::where('nameW', $request->input('nameW'))->first()){
