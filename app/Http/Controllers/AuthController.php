@@ -202,18 +202,22 @@ public function updateUser(Request $request)
 }
 
     
-    public function getUserPhoto(Request $request)
-    {
-        $user = $request->user();
-        $photo = $user->photo;
-        $photoUrl = storage_path('app/private/' . $photo);
-    
-        if (file_exists($photoUrl)) {
-            return response()->file($photoUrl);
-        } else {
-            return response()->json(["error" => 'Image does not exist'], 404);
-        }
+public function getUserPhoto(Request $request)
+{
+    $user = $request->user();
+    if (!$user->photo) {
+        return response()->json(['error' => 'No photo uploaded'], 404);
     }
+    
+    $photoPath = storage_path('app/private/' . $user->photo);
+
+    if (file_exists($photoPath)) {
+        return response()->file($photoPath);
+    } else {
+        \Log::error('User photo not found: ' . $photoPath);
+        return response()->json(['error' => 'Image does not exist'], 404);
+    }
+}
     
 
 }
