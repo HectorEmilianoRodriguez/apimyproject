@@ -9,7 +9,8 @@ class Board extends Model
 {
     use HasFactory;
     protected $table = 'cat_boards';
-    protected $fillabe = [
+    protected $primaryKey = 'idBoard';
+    protected $fillable = [
 
         'nameB',
         'descriptionB',

@@ -5,6 +5,9 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\WorkEnvController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MembersController;
+use App\Http\Controllers\LabelController;
+use App\Http\Controllers\BoardController;
+use App\Http\Controllers\ListController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -71,12 +74,12 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/database/restore', [BackupController::class, 'restoreDatabase']);
 
     //logica de generación de reportes
-    Route::get('/pdf/ParticipantReport', [ReportsController::class, 'ParticipantReport']); // reporte de partipacion
-    Route::get('/pdf/ProductivityReport', [ReportsController::class, 'ProductivityReport']); // reporte de productividad
-    Route::get('/pdf/DeliveryActivitiesReport', [ReportsController::class, 'DeliveryActivitiesReport']); // reporte de plazos de entrega para miembros
-    Route::get('/pdf/DeliveryActivitiesReportCoordinator', [ReportsController::class, 'DeliveryActivitiesReportCoordinator']); // reporte de plazos de entrega para coordinadores
-    Route::get('/pdf/PendingActivitiesReport', [ReportsController::class, 'PendingActivitiesReport']); // reporte de actividades pendientes de un entorno.
-    Route::get('/pdf/CompletedActivitiesReport', [ReportsController::class, 'CompletedActivitiesReport']); // reporte de actividades completadas de un entorno.
+    Route::post('/pdf/ParticipantReport', [ReportsController::class, 'ParticipantReport']); // reporte de partipacion
+    Route::post('/pdf/ProductivityReport', [ReportsController::class, 'ProductivityReport']); // reporte de productividad
+    Route::post('/pdf/DeliveryActivitiesReport', [ReportsController::class, 'DeliveryActivitiesReport']); // reporte de plazos de entrega para miembros
+    Route::post('/pdf/DeliveryActivitiesReportCoordinator', [ReportsController::class, 'DeliveryActivitiesReportCoordinator']); // reporte de plazos de entrega para coordinadores
+    Route::post('/pdf/PendingActivitiesReport', [ReportsController::class, 'PendingActivitiesReport']); // reporte de actividades pendientes de un entorno.
+    Route::post('/pdf/CompletedActivitiesReport', [ReportsController::class, 'CompletedActivitiesReport']); // reporte de actividades completadas de un entorno.
     
     //CRUD Miembros
     Route::get('/inviteMember/{email}/{workenv}/{idwork}', [MembersController::class, 'inviteMember']); // aceptar invitacion de un entorno.
@@ -86,7 +89,19 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::delete('/deleteMember/{idUser}/{nameUser}/{emailmember}/{idWorkEnv}/{nameWork}', [MembersController::class, 'deleteMember']); // expulsar un miembro de un entorno.
     Route::put('/updateMember/{idUser}/{idWorkEnv}/{privilege}', [MembersController::class, 'updateMember']); // actualizar privilegio de un miembro de un entorno.
 
+    //CRUD Etiquetas
+    Route::get('/getLabels/{idWork}', [LabelController::class, 'getLabels']); // obtener etiquetas de un entorno.
 
+    //CRUD Tableros
+    Route::get('/getBoards/{idWork}', [BoardController::class, 'getBoards']); // obtener tableros de un entorno.
+    Route::post('/newBoard', [BoardController::class, 'newBoard']); // crear un nuevo tablero.
+    Route::post('/getBoard', [BoardController::class, 'getBoard']); // obtener data de un tablero.
+    Route::put('/editBoard', [BoardController::class, 'editBoard']); // actualizar data de un tablero.
+    Route::post('/deleteBoard', [BoardController::class, 'deleteBoard']); // archivar un tablero.
+    Route::post('/undeleteBoard', [BoardController::class, 'undeleteBoard']); // desarchivar un tablero.
+
+    //CRUD Listas
+    Route::post('/getListsDetails', [ListController::class, 'getListsDetails']); // obtener listas junto a las actividades.
 
 
 

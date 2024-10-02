@@ -9,8 +9,10 @@ class Card extends Model
 {
     use HasFactory;
     protected $table = 'cat_cards';
-    protected $fillabe = [
+    protected $primaryKey = 'idCard';
 
+   
+    protected $fillable = [
         'nameC',
         'descriptionC',
         'end_date',
@@ -21,5 +23,10 @@ class Card extends Model
         'done',
         'idList'
     ];
-    
+
+    // Relación de una Card con una Lista
+    public function list()
+    {
+        return $this->belongsTo(Lists::class, 'idList');
+    }
 }
