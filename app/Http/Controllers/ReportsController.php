@@ -47,6 +47,7 @@ class ReportsController extends Controller
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('rel_cards_users.logicdeleted', '!=', 1)
+    ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
     ->groupBy('users.name')
     ->first();
 
@@ -61,6 +62,7 @@ class ReportsController extends Controller
     ->select('cat_cards.idCard', 'cat_cards.nameC', 'cat_cards.descriptionC', 'cat_cards.important', 'cat_cards.end_date', 'cat_cards.done')
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
+    ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fecha
     ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
     ->get();
 
@@ -85,6 +87,7 @@ class ReportsController extends Controller
         ->whereIn('cat_labels.idLabel', $idLabels)
         ->where('users.idUser', '=', $request->input('idUser'))
         ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
+        ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
         ->groupBy('cat_labels.nameL')
         ->get();
 
@@ -100,6 +103,7 @@ class ReportsController extends Controller
         ->where('cat_workenvs.idWorkEnv', $request->input('idWorkEnv'))
         ->where('cat_cards.important', 1)
         ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
+        ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
         ->count('cat_cards.idCard'); // Contar el número de actividades importantes
     
 
@@ -115,6 +119,7 @@ class ReportsController extends Controller
         ->where('cat_workenvs.idWorkEnv', $request->input('idWorkEnv'))
         ->where('cat_cards.important', 0)
         ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
+        ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fecha
         ->count('cat_cards.idCard'); // Contar el número de actividades no importantes
     
 
@@ -183,8 +188,9 @@ class ReportsController extends Controller
         'chartBase64' => $chartBase64,
         'importantActivities' => $importantActivities,
         'notimportantActivities' => $notimportantActivities,
-        'pieChartBase64' => $pieChartBase64 // Gráfico de pastel de actividades completadas vs no completadas
-
+        'pieChartBase64' => $pieChartBase64, // Gráfico de pastel de actividades completadas vs no completadas
+        'date1' => $request->input('date1'),
+        'date2' => $request->input('date1')
     ];
 
     // Generar el PDF utilizando una vista
