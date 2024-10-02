@@ -102,71 +102,68 @@ public function CountMyWorkEnvs()
     ]);
 }
 
-    public function getAllStatsUser() {
-        // Obtener el ID del usuario actual
-        $currentUserId = Auth::id();
-    
-        // Consultar el privilegio del usuario actual
-        $userPrivilege = DB::table('rel_join_workenv_users')
-            ->where('idUser', $currentUserId)
-            ->value('privilege');
-    
-        // Verificar si el privilegio es 1 o 2
-        if (!in_array($userPrivilege, [1, 2])) {
-            return response()->json(['message' => 'notLeader or Coordinator']);
-        }
-    
-        // Obtener los entornos de trabajo en los que participa el usuario y tiene privilege 1 o 2
-        $workEnvIds = DB::table('rel_join_workenv_users')
-            ->where('idUser', $currentUserId)
-            ->whereIn('privilege', [1, 2])
-            ->pluck('idWorkEnv');
-    
-        // Verificar que el usuario participe en al menos un entorno de trabajo
-        if ($workEnvIds->isEmpty()) {
-            return response()->json(['message' => 'this user is not on any workenv yet']);
-        }
-    
-        // Realizar la consulta para contar los comentarios no vistos, solicitudes pendientes, actividades expiradas, 
-        // actividades a punto de expirar, y actividades por evaluar en cada entorno de trabajo
-        $results = DB::table('cat_workenvs')
-            ->select(
-                'cat_workenvs.idWorkEnv AS idWorkEnv',
-                'cat_workenvs.nameW',
-                DB::raw('
-                    COUNT(DISTINCT CASE WHEN cat_comments.seen = 0 THEN cat_comments.idComment END) AS NotSeenComments
-                '),
-                DB::raw('
-                    COUNT(DISTINCT CASE WHEN rel_join_workenv_users.approbed = 0 THEN rel_join_workenv_users.idJoinUserWork END) AS requests
-                '),
-                DB::raw('
-                    COUNT(DISTINCT CASE 
-                        WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 
-                             AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0
-                        OR cat_cards.end_date < NOW()
-                        THEN cat_cards.idCard 
-                    END) AS AlmostExpiredOrExpiredActivities
-                '),
-                DB::raw('
-                    COUNT(DISTINCT CASE 
-                        WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN cat_cards.idCard 
-                    END) AS PendingApprovalActivities
-                ')
-            )
-            ->leftJoin('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
-            ->leftJoin('cat_comments', 'rel_join_workenv_users.idJoinUserWork', '=', 'cat_comments.idJoinUserWork')
-            ->leftJoin('cat_boards', 'cat_workenvs.idWorkEnv', '=', 'cat_boards.idWorkEnv')
-            ->leftJoin('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
-            ->leftJoin('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
-            ->where('rel_join_workenv_users.logicdeleted', '!=', 1) 
-            ->whereIn('cat_workenvs.idWorkEnv', $workEnvIds)
-            ->where('cat_workenvs.logicdeleted', "!=", 1)
-            ->groupBy('cat_workenvs.idWorkEnv', 'cat_workenvs.nameW')
-            ->get();
-    
-        // Devolver los resultados
-        return response()->json($results);
+public function getAllStatsUser() {
+    // Obtener el ID del usuario actual
+    $currentUserId = Auth::id();
+
+    // Consultar el privilegio del usuario actual
+    $userPrivilege = DB::table('rel_join_workenv_users')
+        ->where('idUser', $currentUserId)
+        ->value('privilege');
+
+    // Verificar si el privilegio es 1 o 2
+    if (!in_array($userPrivilege, [1, 2])) {
+        return response()->json(['message' => 'notLeader or Coordinator']);
     }
+
+    // Obtener los entornos de trabajo en los que participa el usuario y tiene privilege 1 o 2
+    $workEnvIds = DB::table('rel_join_workenv_users')
+        ->where('idUser', $currentUserId)
+        ->whereIn('privilege', [1, 2])
+        ->pluck('idWorkEnv');
+
+    // Verificar que el usuario participe en al menos un entorno de trabajo
+    if ($workEnvIds->isEmpty()) {
+        return response()->json(['message' => 'this user is not on any workenv yet']);
+    }
+
+    // Realizar la consulta para sumar los comentarios no vistos, solicitudes pendientes, actividades expiradas,
+    // actividades a punto de expirar, y actividades por evaluar de todos los entornos de trabajo
+    $results = DB::table('cat_workenvs')
+        ->select(
+            DB::raw('
+                SUM(CASE WHEN cat_comments.seen = 0 THEN 1 ELSE 0 END) AS NotSeenComments
+            '),
+            DB::raw('
+                SUM(CASE WHEN rel_join_workenv_users.approbed = 0 THEN 1 ELSE 0 END) AS requests
+            '),
+            DB::raw('
+                SUM(CASE 
+                    WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 
+                         AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0
+                    OR cat_cards.end_date < NOW()
+                    THEN 1 ELSE 0 
+                END) AS AlmostExpiredOrExpiredActivities
+            '),
+            DB::raw('
+                SUM(CASE 
+                    WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN 1 ELSE 0 
+                END) AS PendingApprovalActivities
+            ')
+        )
+        ->leftJoin('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
+        ->leftJoin('cat_comments', 'rel_join_workenv_users.idJoinUserWork', '=', 'cat_comments.idJoinUserWork')
+        ->leftJoin('cat_boards', 'cat_workenvs.idWorkEnv', '=', 'cat_boards.idWorkEnv')
+        ->leftJoin('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
+        ->leftJoin('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
+        ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
+        ->whereIn('cat_workenvs.idWorkEnv', $workEnvIds)
+        ->where('cat_workenvs.logicdeleted', "!=", 1)
+        ->first();  // Usar first() en lugar de get() para obtener una única fila con los totales
+
+    // Devolver los resultados
+    return response()->json($results);
+}
 
 
     public function newWorkEnv(Request $request){
