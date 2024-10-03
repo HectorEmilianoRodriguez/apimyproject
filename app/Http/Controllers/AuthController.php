@@ -175,11 +175,7 @@ class AuthController extends Controller
         \Log::info('Datos recibidos:', $request->all());
         \Log::info('Archivos recibidos:', $request->allFiles());
     
-        $request->validate([
-            'userName' => 'required|string|max:255',
-            'password' => 'nullable|string|min:6',
-            'photo' => 'nullable|image|max:2048', // max 2MB
-        ]);
+       
     
         // Obtener el usuario autenticado
         $user = $request->user();
