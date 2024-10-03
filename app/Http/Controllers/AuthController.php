@@ -169,52 +169,102 @@ class AuthController extends Controller
 
  
 
-public function updateUser(Request $request)
-{
-    // Obtener el usuario autenticado
-    $user = $request->user();
-
-    // Actualizar el nombre del usuario
-    $user->name = $request->input('userName');
-
-    // Actualizar la contraseña si está presente
-    if ($request->filled('password')) {
-        $user->password = Hash::make($request->input('password'));
-    }
-
-    // Verificar si hay una nueva foto en el request
-    if ($request->hasFile('photo')) {
-        // Si el usuario tiene una foto guardada previamente, eliminarla
-        if ($user->photo) {
-            Storage::disk('private')->delete($user->photo);
+    public function updateUser(Request $request)
+    {
+        \Log::info('Iniciando actualización de usuario');
+        \Log::info('Datos recibidos:', $request->all());
+        \Log::info('Archivos recibidos:', $request->allFiles());
+    
+        $request->validate([
+            'userName' => 'required|string|max:255',
+            'password' => 'nullable|string|min:6',
+            'photo' => 'nullable|image|max:2048', // max 2MB
+        ]);
+    
+        // Obtener el usuario autenticado
+        $user = $request->user();
+        \Log::info('Usuario autenticado:', ['id' => $user->id, 'email' => $user->email]);
+    
+        // Actualizar el nombre del usuario
+        $user->name = $request->input('userName');
+        \Log::info('Nombre actualizado:', ['name' => $user->name]);
+    
+        // Actualizar la contraseña si está presente
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->input('password'));
+            \Log::info('Contraseña actualizada');
         }
-
-        // Guardar la nueva foto
-        $photo = $request->file('photo');
-        $photoPath = $photo->store('photos', 'private'); // Guardar en 'storage/app/private/photos'
-        $user->photo = $photoPath; // Actualizar la ruta en la base de datos
+    
+        // Verificar si hay una nueva foto en el request
+        if ($request->hasFile('photo')) {
+            \Log::info('Foto recibida');
+            try {
+                // Si el usuario tiene una foto guardada previamente, eliminarla
+                if ($user->photo) {
+                    \Log::info('Intentando eliminar foto anterior:', ['path' => $user->photo]);
+                    if (Storage::disk('private')->exists($user->photo)) {
+                        Storage::disk('private')->delete($user->photo);
+                        \Log::info('Foto anterior eliminada');
+                    } else {
+                        \Log::warning('Foto anterior no encontrada en el almacenamiento');
+                    }
+                }
+                
+                // Guardar la nueva foto
+                $photo = $request->file('photo');
+                \Log::info('Información de la nueva foto:', [
+                    'name' => $photo->getClientOriginalName(),
+                    'size' => $photo->getSize(),
+                    'mime' => $photo->getMimeType()
+                ]);
+                
+                $photoPath = $photo->store('photos', 'private');
+                \Log::info('Nueva foto guardada en:', ['path' => $photoPath]);
+                
+                $user->photo = $photoPath; // Actualizar la ruta en la base de datos
+            } catch (\Exception $e) {
+                \Log::error('Error al procesar la foto:', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'No se pudo guardar la foto: ' . $e->getMessage()], 500);
+            }
+        } else {
+            \Log::info('No se recibió ninguna foto nueva');
+        }
+    
+        // Guardar los cambios en la base de datos
+        try {
+            $user->save();
+            \Log::info('Cambios guardados en la base de datos');
+        } catch (\Exception $e) {
+            \Log::error('Error al guardar los cambios en la base de datos:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'No se pudieron guardar los cambios: ' . $e->getMessage()], 500);
+        }
+    
+        \Log::info('Actualización de usuario completada con éxito');
+        return response()->json(['message' => 'Perfil actualizado correctamente']);
     }
-
-    // Guardar los cambios en la base de datos
-    $user->save();
-
-    return response()->json(['message' => 'Perfil actualizado correctamente']);
-}
-
     
 public function getUserPhoto(Request $request)
 {
     $user = $request->user();
+    \Log::info('Obteniendo foto para el usuario: ' . $user->id);
+    \Log::info('Ruta de la foto: ' . $user->photo);
+
+
+
     if (!$user->photo) {
+        \Log::info('El usuario no tiene foto');
         return response()->json(['error' => 'No photo uploaded'], 404);
     }
     
     $photoPath = storage_path('app/private/' . $user->photo);
 
     if (file_exists($photoPath)) {
+        \Log::info('Foto encontrada, devolviendo archivo');
+       
         return response()->file($photoPath);
     } else {
-        
+        \Log::error('User photo not found: ' . $photoPath);
+       
         return response()->json(['error' => 'Image does not exist'], 404);
     }
 }
