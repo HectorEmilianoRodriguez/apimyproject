@@ -15,7 +15,7 @@ class ListController extends Controller
         $idBoard = $request->input('idBoard');
 
         // Buscar todas las listas que pertenecen al idBoard y cargar las cards relacionadas
-        $lists = Lists::where('idBoard', $idBoard)
+        $lists = Lists::where('idBoard', $idBoard)->where('logicdeleted', 0)
                       ->with('cards') // Cargar las actividades (cards) relacionadas con las listas
                       ->get();
 
@@ -23,5 +23,39 @@ class ListController extends Controller
         return response()->json($lists);
     }
 
+    public function createList(Request $request){
+
+        $newL = new Lists();
+        $newL->nameL = $request->input('nameL');
+        $newL->descriptionL = $request->input('descriptionL');
+        $newL->colorL = $request->input('colorL');
+        $newL->logicdeleted = 0;
+        $newL->idBoard = $request->input('idBoard');
+        $newL->save();
+        return response()->json(['message' => 'success'], 200);
+
+
+    }
+
+    public function updateList(Request $request){
+
+        $updateL = Lists::find($request->input('idList'));
+        $updateL->nameL = $request->input('nameL');
+        $updateL->descriptionL = $request->input('descriptionL');
+        $updateL->colorL = $request->input('colorL');
+        $updateL->logicdeleted = 0;
+        $updateL->idBoard = $request->input('idBoard');
+        $updateL->save();
+        return response()->json(['message' => 'success'], 200);
+    }
+
+    public function deleteList(Request $request){
+
+        $updateL = Lists::find($request->input('idList'));
+        $updateL->logicdeleted = 1;
+        $updateL->save();
+        return response()->json(['message' => 'success'], 200);
+
+    }
     
 }

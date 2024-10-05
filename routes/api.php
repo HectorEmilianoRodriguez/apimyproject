@@ -8,6 +8,7 @@ use App\Http\Controllers\MembersController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ListController;
+use App\Http\Controllers\CardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -91,6 +92,8 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
 
     //CRUD Etiquetas
     Route::get('/getLabels/{idWork}', [LabelController::class, 'getLabels']); // obtener etiquetas de un entorno.
+    Route::post('/getActivityLabels', [LabelController::class, 'getActivityLabels']); // obtener etiquetas de una actividad.
+
 
     //CRUD Tableros
     Route::get('/getBoards/{idWork}', [BoardController::class, 'getBoards']); // obtener tableros de un entorno.
@@ -102,6 +105,17 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
 
     //CRUD Listas
     Route::post('/getListsDetails', [ListController::class, 'getListsDetails']); // obtener listas junto a las actividades.
+    Route::post('/createList', [ListController::class, 'createList']); // crear nueva lista.
+    Route::put('/updateList', [ListController::class, 'updateList']); // actualizar lista.
+    Route::post('/deleteList', [ListController::class, 'deleteList']); // eliminar logicamente la lista.
+
+    //CRUD Actividades
+    Route::post('/newCard', [CardController::class, 'newCard']); // crear nueva actividad.
+    Route::put('/updateCard', [CardController::class, 'updateCard']); // actualizar actividad.
+    Route::post('/deleteCard', [CardController::class, 'deleteCard']); // eliminar logicamente actividad.
+
+
+
 
 
 
