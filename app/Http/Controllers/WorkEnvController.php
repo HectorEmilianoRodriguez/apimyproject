@@ -636,7 +636,7 @@ public function getPossibleRequests()
         if ($workEnvIds->isEmpty()) {
             return response()->json(['message' => 'this user is not on any workenv yet']);
         }
-    
+    //
         // Crear la consulta en Eloquent con un WHERE LIKE para la búsqueda en los campos 'nameW' y 'name'
         $results = DB::table('rel_join_workenv_users')
             ->join('users', 'rel_join_workenv_users.idUser', '=', 'users.idUser')
