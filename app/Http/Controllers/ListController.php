@@ -10,18 +10,22 @@ class ListController extends Controller
     
    
     public function getListsDetails(Request $request)
-    {
-        // Obtener el idBoard del request
-        $idBoard = $request->input('idBoard');
+{
+    // Obtener el idBoard del request
+    $idBoard = $request->input('idBoard');
 
-        // Buscar todas las listas que pertenecen al idBoard y cargar las cards relacionadas
-        $lists = Lists::where('idBoard', $idBoard)->where('logicdeleted', 0)
-                      ->with('cards') // Cargar las actividades (cards) relacionadas con las listas
-                      ->get();
+    // Buscar todas las listas que pertenecen al idBoard y cargar las cards relacionadas que no están eliminadas
+    $lists = Lists::where('idBoard', $idBoard)
+                  ->where('logicdeleted', 0)
+                  ->with(['cards' => function($query) {
+                      $query->where('logicdeleted', 0); // Filtrar las cards que no están eliminadas
+                  }])
+                  ->get();
 
-        // Retornar las listas con las cards como JSON
-        return response()->json($lists);
-    }
+    // Retornar las listas con las cards como JSON
+    return response()->json($lists);
+}
+
 
     public function createList(Request $request){
 

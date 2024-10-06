@@ -13,6 +13,8 @@ use App\Mail\BannedMemberMailable;
 use App\Mail\InviteMemberMailable;
 use App\Mail\NotFoundMemberMailable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
 class MembersController extends Controller
 
 {
@@ -23,6 +25,7 @@ class MembersController extends Controller
                 'users.idUser',
                 'users.name',
                 'users.email',
+                'users.photo',
                 'rel_join_workenv_users.privilege',
                 'rel_join_workenv_users.created_at as date'
             )
@@ -33,10 +36,56 @@ class MembersController extends Controller
             ->get();
 
         // Retornar los miembros
+         // Modificar las fotos para incluir la URL completa
+         $members = $members->map(function ($user) {
+            if ($user->photo) {
+                $user->photo = url('api/photos/' . $user->photo); // Genera la URL completa
+            } else {
+                $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
+            }
+            return $user;
+        });
+
         return response()->json($members);
             
 
     }
+
+    public function getUsersPhotosByCard(Request $request)
+    {
+        // Obtener el idCard del request
+        $idCard = $request->input('idCard');
+    
+        $users = DB::table('rel_cards_users')
+            ->select(
+                'users.idUser',
+                'users.name',
+                'users.email',
+                'users.photo',
+                'rel_join_workenv_users.privilege',
+                'rel_cards_users.logicdeleted',
+                'rel_cards_users.created_at as date'
+            )
+            ->join('rel_join_workenv_users', 'rel_join_workenv_users.idJoinUserWork', '=', 'rel_cards_users.idJoinUserWork')
+            ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
+            ->where('rel_cards_users.idCard', $idCard)
+            ->where('rel_cards_users.logicdeleted', '!=', 1)
+            ->get();
+    
+        // Modificar las fotos para incluir la URL completa
+        $users = $users->map(function ($user) {
+            if ($user->photo) {
+                $user->photo = url('api/photos/' . $user->photo); // Genera la URL completa
+            } else {
+                $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
+            }
+            return $user;
+        });
+    
+        return response()->json($users);
+    }
+    
+    
 
     public function deleteMember($idUser, $nameuser, $emailmember, $idWorkEnv, $namework){
         $fechaActual = date('Y-m-d');

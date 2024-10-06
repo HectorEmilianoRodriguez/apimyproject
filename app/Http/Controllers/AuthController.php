@@ -205,19 +205,27 @@ public function updateUser(Request $request)
 public function getUserPhoto(Request $request)
 {
     $user = $request->user();
-    if (!$user->photo) {
-        return response()->json(['error' => 'No photo uploaded'], 404);
-    }
-    
-    $photoPath = storage_path('app/private/' . $user->photo);
 
-    if (file_exists($photoPath)) {
-        return response()->file($photoPath);
-    } else {
-        
-        return response()->json(['error' => 'Image does not exist'], 404);
+    // Verificar si el usuario tiene una foto
+    if ($user->photo) {
+        $photoPath = storage_path('app/private/photos/' . $user->photo);
+
+        // Comprobar si la foto existe
+        if (file_exists($photoPath)) {
+            return response()->file($photoPath);
+        }
     }
+
+    // Si no hay foto o no existe, devuelve la imagen por defecto
+    $defaultPhotoPath = storage_path('app/private/photos/test.jpg');
+
+    if (file_exists($defaultPhotoPath)) {
+        return response()->file($defaultPhotoPath);
+    }
+
+    // Si la imagen por defecto tampoco existe, devolver un error
+    return response()->json(['error' => 'Default image does not exist'], 404);
 }
-    
+
 
 }

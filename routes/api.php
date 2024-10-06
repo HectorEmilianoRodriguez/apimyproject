@@ -9,6 +9,8 @@ use App\Http\Controllers\LabelController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ListController;
 use App\Http\Controllers\CardController;
+use App\Http\Controllers\FilesController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -89,10 +91,14 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('/getMembers/{idWorkEnv}', [MembersController::class, 'getMembers']); // devolver los miembros de un entorno de trabajo.
     Route::delete('/deleteMember/{idUser}/{nameUser}/{emailmember}/{idWorkEnv}/{nameWork}', [MembersController::class, 'deleteMember']); // expulsar un miembro de un entorno.
     Route::put('/updateMember/{idUser}/{idWorkEnv}/{privilege}', [MembersController::class, 'updateMember']); // actualizar privilegio de un miembro de un entorno.
+    Route::post('/getUsersPhotosByCard', [MembersController::class, 'getUsersPhotosByCard']); // devolver los miembros de un entorno de trabajo junto a su foto de perfil.
 
     //CRUD Etiquetas
     Route::get('/getLabels/{idWork}', [LabelController::class, 'getLabels']); // obtener etiquetas de un entorno.
     Route::post('/getActivityLabels', [LabelController::class, 'getActivityLabels']); // obtener etiquetas de una actividad.
+    Route::post('/getPossibleLabelsForActivity', [LabelController::class, 'getPossibleLabelsForActivity']); // obtener etiquetas posibles para ser utilizadas en una actividad.
+    Route::post('/storeCardLabels', [LabelController::class, 'storeCardLabels']); // para etiquetar una actividad.
+    Route::post('/removeLabelFromAct', [LabelController::class, 'removeLabelFromAct']); // para remove una etiqueta de una actividad.
 
 
     //CRUD Tableros
@@ -115,7 +121,9 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/deleteCard', [CardController::class, 'deleteCard']); // eliminar logicamente actividad.
 
 
+    //Lógica administrador de archivos
 
+    Route::get('/photos/{filename}', [FilesController::class, 'getPhoto']);
 
 
 
