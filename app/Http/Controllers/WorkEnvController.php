@@ -205,27 +205,30 @@ public function getAllStatsUser() {
 
     }
 
-    public function  updateWorkEnv(Request $request){
-
-
-        if(!WorkEnv::find($request->input('idWorkEnv'))){
-            return response()->json(['message' => 'workenv not found']);
+    public function updateWorkEnv(Request $request, $id) {
+        try {
+            // Verificar que el entorno de trabajo existe
+            $workenv = WorkEnv::find($id);
+            if (!$workenv) {
+                return response()->json(['message' => 'workenv not found'], 404);
+            }
+ 
+            // Actualizar los campos del entorno de trabajo
+            $workenv->nameW = $request->input('nameW');
+            $workenv->descriptionW = $request->input('descriptionW');
+            $workenv->type = $request->input('type');
+            $workenv->date_start = $request->input('date_start');
+            $workenv->date_end = $request->input('date_end');
+            $workenv->logicdeleted = $request->input('logicdeleted');
+ 
+            // Guardar los cambios en la base de datos
+            $workenv->save();
+ 
+            return response()->json(['message' => 'ok']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al actualizar el entorno: ' . $e->getMessage()], 500);
         }
-
-        $workenv = WorkEnv::find($request->input('idWorkEnv'));
-
-        $workenv->nameW = $request->input('nameW');
-        $workenv->descriptionW = $request->input('descriptionW');
-        $workenv->type = $request->input('type');
-        $workenv->date_start = $request->input('date_start');
-        $workenv->date_end = $request->input('date_end');
-        $workenv->logicdeleted = $request->input(0);
-
-        $workenv->save();
-        return response()->json(['message' => 'ok']);
-
     }
-
     public function deleteWorkEnv($idWorkEnv){
 
         if(WorkEnv::where('idWorkEnv', $idWorkEnv)->update(['logicdeleted' => 1])){
