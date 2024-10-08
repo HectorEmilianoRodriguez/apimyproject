@@ -10,6 +10,8 @@ use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ListController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\FilesController;
+use App\Http\Controllers\CommentController;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -92,6 +94,12 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::delete('/deleteMember/{idUser}/{nameUser}/{emailmember}/{idWorkEnv}/{nameWork}', [MembersController::class, 'deleteMember']); // expulsar un miembro de un entorno.
     Route::put('/updateMember/{idUser}/{idWorkEnv}/{privilege}', [MembersController::class, 'updateMember']); // actualizar privilegio de un miembro de un entorno.
     Route::post('/getUsersPhotosByCard', [MembersController::class, 'getUsersPhotosByCard']); // devolver los miembros de un entorno de trabajo junto a su foto de perfil.
+    Route::post('/getPossibleMembersByCard', [MembersController::class, 'getPossibleMembersByCard']); // devolver posibles miembros para ser asignados a una actividad.
+    Route::post('/storeCardMembers', [MembersController::class, 'storeCardMembers']); // almacenar la asignacion de miembros y actividades.
+    Route::post('/DeleteMemberByCard', [MembersController::class, 'DeleteMemberByCard']); // eliminar una asignación a un miembro.
+    
+
+
 
     //CRUD Etiquetas
     Route::get('/getLabels/{idWork}', [LabelController::class, 'getLabels']); // obtener etiquetas de un entorno.
@@ -120,11 +128,26 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::put('/updateCard', [CardController::class, 'updateCard']); // actualizar actividad.
     Route::post('/deleteCard', [CardController::class, 'deleteCard']); // eliminar logicamente actividad.
 
+    //CRUD Aprobacion de actividades
+    Route::post('/endCard', [CardController::class, 'endCard']); // marcar como completada una actividad.
+    Route::post('/approbeCard', [CardController::class, 'approbeCard']); // aprobar una actividad.
+    Route::post('/desapprobeCard', [CardController::class, 'desapprobeCard']); // desaprobar una actividad.
+
 
     //Lógica administrador de archivos
 
-    Route::get('/photos/{filename}', [FilesController::class, 'getPhoto']);
+    Route::get('/photos/{filename}', [FilesController::class, 'getPhoto']); //para descargar fotos de perfil
+    Route::post('/storageEvidence', [FilesController::class, 'storageEvidence']);  //para almacenar evidencia de las actividades
+    Route::get('/downloadEvidence/{file}', [FilesController::class, 'downloadEvidence']); //para descargar la evidencia de la actividad.
 
+    //CRUD Comentarios
+    Route::post('/getComments', [CommentController::class, 'getComments']); //para obtener los comentarios de una actividad de un entorno.
+    Route::post('/deleteComment', [CommentController::class, 'deleteComment']); //para eliminar un comentario de una actividad.
+    Route::post('/newComment', [CommentController::class, 'newComment']); //para agregar un comentario de una actividad.
+
+
+
+    
 
 
 });

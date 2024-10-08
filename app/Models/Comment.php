@@ -9,6 +9,8 @@ class Comment extends Model
 {
     use HasFactory;
     protected $table = 'cat_comments';
+    protected $primaryKey = 'idComment';
+
     protected $fillable = [
 
         'idCard',

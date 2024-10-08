@@ -14,6 +14,7 @@ use App\Mail\InviteMemberMailable;
 use App\Mail\NotFoundMemberMailable;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Models\relcarduser;
 
 class MembersController extends Controller
 
@@ -27,7 +28,8 @@ class MembersController extends Controller
                 'users.email',
                 'users.photo',
                 'rel_join_workenv_users.privilege',
-                'rel_join_workenv_users.created_at as date'
+                'rel_join_workenv_users.created_at as date',
+                'rel_join_workenv_users.idJoinUserWork'
             )
             ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
             ->where('rel_join_workenv_users.idWorkEnv', $idWorkEnv)
@@ -51,6 +53,83 @@ class MembersController extends Controller
 
     }
 
+        
+public function storeCardMembers(Request $request)
+{
+    $idCard = $request->input('idCard');
+    $idUsers = $request->input('idUsers', []); 
+
+    if (!is_array($idUsers)) {
+        return response()->json(['error' => 'idMembers debe ser un arreglo.'], 400);
+    }
+
+    $cardLabelData = [];
+
+    foreach ($idUsers as $idUser) {
+        $cardLabelData[] = [
+            'idCard' => $idCard,
+            'idJoinUserWork' => $idUser,
+            'logicdeleted' => 0,
+            'created_at' => now(), 
+            'updated_at' => now(),
+        ];
+    }
+
+    // Inserta las relaciones en la base de datos
+    relcarduser::insert($cardLabelData);
+
+    return response()->json(['message' => 'Relaciones almacenadas correctamente.'], 201);
+}
+
+
+    public function getPossibleMembersByCard(Request $request){
+
+                $members = DB::table('rel_join_workenv_users')
+                ->select(
+                    'users.idUser',
+                    'users.name',
+                    'users.email',
+                    'users.photo',
+                    'rel_join_workenv_users.privilege',
+                    'rel_join_workenv_users.created_at as date',
+                    'rel_join_workenv_users.idJoinUserWork'
+                )
+                ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
+                ->where('rel_join_workenv_users.idWorkEnv', $request->input('idWorkEnv'))
+                ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
+                ->where('rel_join_workenv_users.approbed', '=', 1)
+                ->whereNotIn('users.idUser', $request->input('idUsers'))
+                ->get();
+
+            // Retornar los miembros
+            // Modificar las fotos para incluir la URL completa
+            $members = $members->map(function ($user) {
+                if ($user->photo) {
+                    $user->photo = url('api/photos/' . $user->photo); // Genera la URL completa
+                } else {
+                    $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
+                }
+                return $user;
+            });
+
+            return response()->json($members);
+    }
+
+    public function DeleteMemberByCard(Request $request){
+
+        $idCard = $request->input('idCard');
+        $idJoinUserWork = $request->input('idJoinUserWork');
+
+        relcarduser::where('idCard', $idCard)
+                    ->where('idJoinUserWork', $idJoinUserWork)
+                    ->delete();
+
+
+                   
+
+        return response()->json(['message' => 'deleted'], 201);
+    }
+
     public function getUsersPhotosByCard(Request $request)
     {
         // Obtener el idCard del request
@@ -64,7 +143,8 @@ class MembersController extends Controller
                 'users.photo',
                 'rel_join_workenv_users.privilege',
                 'rel_cards_users.logicdeleted',
-                'rel_cards_users.created_at as date'
+                'rel_cards_users.created_at as date',
+                'rel_cards_users.idJoinUserWork'
             )
             ->join('rel_join_workenv_users', 'rel_join_workenv_users.idJoinUserWork', '=', 'rel_cards_users.idJoinUserWork')
             ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')

@@ -295,7 +295,7 @@ public function getAllStatsUser() {
         $idUser = Auth::id();
     
         // Realiza la consulta para verificar si el usuario está en el entorno de trabajo
-        $result = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv', 'cat_workenvs.logicdeleted')
+        $result = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv', 'cat_workenvs.logicdeleted', 'rel_join_workenv_users.idJoinUserWork')
             ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
             ->where('rel_join_workenv_users.idUser', $idUser)
             ->where('cat_workenvs.idWorkEnv', $idWorkEnv)
