@@ -65,8 +65,7 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
 
 
     //CRUD entornos de trabajo
-    Route::put('updateWorkEnv', [WorkEnvController::class, 'updateWorkEnv']); //para actualizar un entorno de trabajo
-    Route::post('newWorkEnv', [WorkEnvController::class, 'newWorkEnv']); //para registrar un nuevo entorno de trabajo
+    Route::put('updateWorkEnv/{id}', [WorkEnvController::class, 'updateWorkEnv']); Route::post('newWorkEnv', [WorkEnvController::class, 'newWorkEnv']); //para registrar un nuevo entorno de trabajo
     Route::delete('deleteWorkEnv/{idWorkEnv}',[WorkEnvController::class, 'deleteWorkEnv']); //para eliminar logicamente un entorno de trabajo
     
     Route::get('getWorkEnvOwner/{idWorkEnv}',[WorkEnvController::class, 'getWorkEnvOwner']); //para obtener el líder del entorno.
