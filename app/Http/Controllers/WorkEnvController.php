@@ -19,6 +19,7 @@ use App\Mail\NotApprobedMailable;
 use App\Mail\RequestWorkEnvMailable;
 use Illuminate\Notifications\Notification;
 use Termwind\Components\Raw;
+use Illuminate\Support\Str;
 
 class WorkEnvController extends Controller
 {
@@ -31,11 +32,7 @@ class WorkEnvController extends Controller
     $userPrivilege = DB::table('rel_join_workenv_users')
         ->where('idUser', $currentUserId)
         ->value('privilege');
-
-    // Verificar si el privilegio es 1 o 2
-    if (!in_array($userPrivilege, [1, 2])) {
-        return response()->json(['message' => 'notLeader or Coordinator']);
-    }
+ 
 
     // Obtener los IDs de los entornos de trabajo en los que participa el usuario y tiene privilegio 1 o 2
     $workEnvIds = DB::table('rel_join_workenv_users')
@@ -43,10 +40,6 @@ class WorkEnvController extends Controller
         ->whereIn('privilege', [1, 2])
         ->pluck('idWorkEnv');
 
-    // Verificar que el usuario participe en al menos un entorno de trabajo
-    if ($workEnvIds->isEmpty()) {
-        return response()->json(['message' => 'this user is not on any workenv yet']);
-    }
 
     // Definir las fechas para las condiciones
     $today = Carbon::now();
@@ -111,43 +104,33 @@ public function getAllStatsUser() {
         ->where('idUser', $currentUserId)
         ->value('privilege');
 
-    // Verificar si el privilegio es 1 o 2
-    if (!in_array($userPrivilege, [1, 2])) {
-        return response()->json(['message' => 'notLeader or Coordinator']);
-    }
-
     // Obtener los entornos de trabajo en los que participa el usuario y tiene privilege 1 o 2
     $workEnvIds = DB::table('rel_join_workenv_users')
         ->where('idUser', $currentUserId)
         ->whereIn('privilege', [1, 2])
         ->pluck('idWorkEnv');
 
-    // Verificar que el usuario participe en al menos un entorno de trabajo
-    if ($workEnvIds->isEmpty()) {
-        return response()->json(['message' => 'this user is not on any workenv yet']);
-    }
-
-    // Realizar la consulta para sumar los comentarios no vistos, solicitudes pendientes, actividades expiradas,
-    // actividades a punto de expirar, y actividades por evaluar de todos los entornos de trabajo
+    // Realizar la consulta para contar los comentarios no vistos, solicitudes pendientes, actividades expiradas, 
+    // actividades a punto de expirar, y actividades por evaluar en general
     $results = DB::table('cat_workenvs')
         ->select(
             DB::raw('
-                SUM(CASE WHEN cat_comments.seen = 0 THEN 1 ELSE 0 END) AS NotSeenComments
+                COUNT(DISTINCT CASE WHEN cat_comments.seen = 0 THEN cat_comments.idComment END) AS NotSeenComments
             '),
             DB::raw('
-                SUM(CASE WHEN rel_join_workenv_users.approbed = 0 THEN 1 ELSE 0 END) AS requests
+                COUNT(DISTINCT CASE WHEN rel_join_workenv_users.approbed = 0 THEN rel_join_workenv_users.idJoinUserWork END) AS requests
             '),
             DB::raw('
-                SUM(CASE 
+                COUNT(DISTINCT CASE 
                     WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 
                          AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0
                     OR cat_cards.end_date < NOW()
-                    THEN 1 ELSE 0 
+                    THEN cat_cards.idCard 
                 END) AS AlmostExpiredOrExpiredActivities
             '),
             DB::raw('
-                SUM(CASE 
-                    WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN 1 ELSE 0 
+                COUNT(DISTINCT CASE 
+                    WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN cat_cards.idCard 
                 END) AS PendingApprovalActivities
             ')
         )
@@ -156,10 +139,56 @@ public function getAllStatsUser() {
         ->leftJoin('cat_boards', 'cat_workenvs.idWorkEnv', '=', 'cat_boards.idWorkEnv')
         ->leftJoin('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
         ->leftJoin('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
-        ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
+        ->where('rel_join_workenv_users.logicdeleted', '!=', 1) 
         ->whereIn('cat_workenvs.idWorkEnv', $workEnvIds)
         ->where('cat_workenvs.logicdeleted', "!=", 1)
-        ->first();  // Usar first() en lugar de get() para obtener una única fila con los totales
+        ->first(); // Cambiado a first() para obtener un único resultado
+
+    // Devolver los resultados
+    return response()->json($results);
+}
+
+
+
+public function generalStats() {
+    // Obtener el ID del usuario actual
+    $currentUserId = Auth::id();
+
+    // Consultar el privilegio del usuario actual
+    $userPrivilege = DB::table('rel_join_workenv_users')
+        ->where('idUser', $currentUserId)
+        ->value('privilege');
+
+
+    // Obtener los entornos de trabajo en los que participa el usuario y tiene privilege 1 o 2
+    $workEnvIds = DB::table('rel_join_workenv_users')
+        ->where('idUser', $currentUserId)
+        ->whereIn('privilege', [1, 2])
+        ->pluck('idWorkEnv');
+
+
+        $results = DB::table('cat_workenvs')
+        ->select(
+            'cat_workenvs.idWorkEnv AS idWorkEnv',
+            'cat_workenvs.nameW',
+            DB::raw('COUNT(DISTINCT CASE WHEN cat_comments.seen = 0 THEN cat_comments.idComment END) AS NotSeenComments'),
+            DB::raw('COUNT(DISTINCT CASE WHEN rel_join_workenv_users.approbed = 0 THEN rel_join_workenv_users.idJoinUserWork END) AS requests'),
+            DB::raw('COUNT(DISTINCT CASE WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0 OR cat_cards.end_date < NOW() THEN cat_cards.idCard END) AS AlmostExpiredOrExpiredActivities'),
+            DB::raw('COUNT(DISTINCT CASE WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN cat_cards.idCard END) AS PendingApprovalActivities')
+        )
+        ->leftJoin('rel_join_workenv_users', function($join) {
+            $join->on('cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
+                 ->where('rel_join_workenv_users.logicdeleted', '!=', 1);
+        })
+        ->leftJoin('cat_comments', 'rel_join_workenv_users.idJoinUserWork', '=', 'cat_comments.idJoinUserWork')
+        ->leftJoin('cat_boards', 'cat_workenvs.idWorkEnv', '=', 'cat_boards.idWorkEnv')
+        ->leftJoin('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
+        ->leftJoin('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
+        ->whereIn('cat_workenvs.idWorkEnv', $workEnvIds)
+        ->where('cat_workenvs.logicdeleted', "!=", 1)
+        ->groupBy('cat_workenvs.idWorkEnv', 'cat_workenvs.nameW')
+        ->get();
+    
 
     // Devolver los resultados
     return response()->json($results);
@@ -175,7 +204,7 @@ public function getAllStatsUser() {
         $workenv->date_start = $request->input('date_start');
         $workenv->date_end = $request->input('date_end');
         $workenv->logicdeleted = 0;
-        
+        $workenv->codeWork = Str::random(5);
 
         if(WorkEnv::where('nameW', $request->input('nameW'))->first()){
 
@@ -248,7 +277,7 @@ public function getAllStatsUser() {
     public function getMyWorkEnvs(){
         $idUser = Auth::id();
 
-        
+    
         // Obtener entornos donde privilege es igual a 2
         $results = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv')
         ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
@@ -337,10 +366,6 @@ public function getAllStatsUser() {
             ->where('idUser', $currentUserId)
             ->value('privilege');
 
-        // Verificar si el privilegio es 1 o 2
-        if (!in_array($userPrivilege, [1, 2])) {
-            return response()->json(['message' => 'notLeader or Coordinator']);
-        }
 
         // Obtener los IDs de los entornos de trabajo en los que participa el usuario y tiene privilegio 1 o 2
         $workEnvIds = DB::table('rel_join_workenv_users')
@@ -348,10 +373,7 @@ public function getAllStatsUser() {
             ->whereIn('privilege', [1, 2])
             ->pluck('idWorkEnv');
 
-        // Verificar que el usuario participe en al menos un entorno de trabajo
-        if ($workEnvIds->isEmpty()) {
-            return response()->json([ ]);
-        }
+      
 
         // Realizar la consulta en Eloquent para obtener las tarjetas con 'approbed' = 0 y 'done' = 1
         $cards = Card::select(
@@ -390,10 +412,7 @@ public function getAllStatsUser() {
             ->where('logicdeleted', '!=', 1) // Excluir registros eliminados
             ->pluck('idWorkEnv');
     
-        // Verificar que el usuario participe en al menos un entorno de trabajo
-        if ($workEnvIds->isEmpty()) {
-            return response()->json(['message' => 'This user is not in any work environment with required privileges.']);
-        }
+       
     
         // Realizar la consulta en Eloquent
         $comments = Card::select(
@@ -419,6 +438,7 @@ public function getAllStatsUser() {
             ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
             ->where('cat_comments.seen', 0) // Solo comentarios no vistos
             ->where('cat_workenvs.logicdeleted', "!=", 1)
+            ->where('cat_comments.logicdeleted', "!=", 1)
             ->whereIn('cat_workenvs.idWorkEnv', $workEnvIds) // Solo los entornos de trabajo del usuario
             ->where('rel_join_workenv_users.logicdeleted', '!=', 1) // Excluir usuarios eliminados lógicamente
             ->get();
@@ -507,20 +527,32 @@ public function getPossibleRequests()
     return response()->json($results);
 }
 
-    public function joinOnWorkEnv($idWorkEnv){
+    public function joinOnWorkEnv($codeWork){
 
         // Obtener el ID del usuario actual
         $currentUserId = Auth::id();
 
-        if(JoinWorkEnvUser::where('idWorkEnv', $idWorkEnv)->where('idUser', $currentUserId)->first()){
+        if(!WorkEnv::where('codeWork', $codeWork)->first()){
+            return response()->json(['message' => 'invalid']);
+
+        }
+
+        $idwork = WorkEnv::select('idWorkEnv')->where('codeWork', $codeWork)->first();
+        $idwork = $idwork['idWorkEnv'];
+
+
+        if(JoinWorkEnvUser::where('idWorkEnv', $idwork)->where('idUser', $currentUserId)->first()){
             return response()->json(['message' => 'this user is already on this workenv']);
         }
+
+       
+
         $JoinWorkEnv = new JoinWorkEnvUser();
 
         $JoinWorkEnv->approbed = 0;
         $JoinWorkEnv->logicdeleted = 0;
         $JoinWorkEnv->privilege = 0;
-        $JoinWorkEnv->idWorkEnv = $idWorkEnv;
+        $JoinWorkEnv->idWorkEnv = $idwork;
         $JoinWorkEnv->idUser = $currentUserId;
 
         $JoinWorkEnv->save();
@@ -667,7 +699,8 @@ public function getPossibleRequests()
     }
     
     public function NotifyUserApprobedOrNot($workenv, $idUser, $flag){
-
+        
+      
         $owner = Auth::user()->name;
         $member = User::find($idUser)->name;
         $emailmember = User::find($idUser)->email;
@@ -700,31 +733,50 @@ public function getPossibleRequests()
         return response()->json(['success' => 'ok']);
 
     }
-    public function NotifyUserNewRequest($workenv, $idUser){
-
+    public function NotifyUserNewRequest($codeWork) {
+        $workenv = WorkEnv::select('nameW', 'idWorkEnv')->where('codeWork', $codeWork)->first();
+    
+        // Check if $workenv is null
+        if (!$workenv) {
+            return response()->json(['error' => 'Work environment not found']);
+        }
+    
+        // Access properties
+        $nameW = $workenv->nameW;
+        $idWorkEnv = $workenv->idWorkEnv;
+    
         $member = Auth::user()->name;
-        $owner = User::find($idUser)->name;
-        $emailowner = User::find($idUser)->email;
+        $idUser = JoinWorkEnvUser::select('idUser')->where('idWorkEnv', $idWorkEnv)->where('privilege', 2)->first();
+    
+        // Check if $idUser is null
+        if (!$idUser) {
+            return response()->json(['error' => 'User not found']);
+        }
+    
+        // Use the ID to find the user
+        $owner = User::find($idUser->idUser);
+        if (!$owner) {
+            return response()->json(['error' => 'Owner not found']);
+        }
+    
+        $emailOwner = $owner->email;
         $newNotification = new Notifications();
         $fechaActual = date('Y-m-d');
-        if(!User::find($idUser)->name){
-            return response()->json(['error' => 'user not found']);
-
-        }
-       
     
-        Mail::to($emailowner)->send(new RequestWorkEnvMailable($workenv, $owner, $member));
-        $newNotification->title = "Solicitud de unión al entorno ".$workenv;
-        $newNotification->description = "El usuario ".$member." desea unirse al entorno ".$workenv;
-        $newNotification->content = "Solicitud enviada el: ". $fechaActual;
+        Mail::to($emailOwner)->send(new RequestWorkEnvMailable($nameW, $owner->name, $member));
+    
+        $newNotification->title = "Solicitud de unión al entorno " . $nameW;
+        $newNotification->description = "El usuario " . $member . " desea unirse al entorno " . $nameW;
+        $newNotification->content = "Solicitud enviada el: " . $fechaActual;
         $newNotification->seen = 0;
         $newNotification->logicdeleted = 0;
-        $newNotification->idUser = $idUser;
+        $newNotification->idUser = $idUser->idUser; // Ensure this is set correctly
         $newNotification->save();
-
+    
         return response()->json(['success' => 'ok']);
-
     }
+    
+    
 
     public function getNotifications(){
         $iduser = Auth::id();

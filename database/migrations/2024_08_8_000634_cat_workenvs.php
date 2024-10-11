@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('date_end')->nullable(false);
             $table->integer('logicdeleted')->nullable();
             $table->timestamps();
+            $table->string('codeWork', 100)->nullable();
         });
 
         Schema::create('rel_join_workenv_users', function (Blueprint $table) {

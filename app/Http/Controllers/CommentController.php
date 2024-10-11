@@ -33,7 +33,7 @@ class CommentController extends Controller
         $data = $data->map(function ($user) {
             // Genera la URL completa para la foto
             if ($user->photo) {
-                $user->photo = url('api/photos/' . $user->photo); // Genera la URL completa
+                $user->photo = url('api/' . $user->photo); // Genera la URL completa
             } else {
                 $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
             }
@@ -65,6 +65,13 @@ class CommentController extends Controller
     public function editComment(Request $request){
         $com = Comment::find($request->input('idComment'));
         $com->text = $request->input('text');
+        $com->save();
+        return response()->json(["success" => 'updated'], 201);
+    }  
+
+    public function setSeenComment(Request $request){
+        $com = Comment::find($request->input('idComment'));
+        $com->seen = 1;
         $com->save();
         return response()->json(["success" => 'updated'], 201);
     }

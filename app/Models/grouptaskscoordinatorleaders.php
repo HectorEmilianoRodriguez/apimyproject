@@ -9,6 +9,8 @@ class grouptaskscoordinatorleaders extends Model
 {
     use HasFactory;
     protected $table = 'cat_grouptasks_coordinatorleaders';
+    protected $primaryKey = 'idgrouptaskcl';
+
     protected $fillabe = [
 
         'idJoinUserWork',

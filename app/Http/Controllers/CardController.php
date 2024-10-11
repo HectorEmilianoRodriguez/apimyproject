@@ -143,6 +143,21 @@ class CardController extends Controller
     
 
 
+public function updateActivity(Request $request) {
+
+    $activity = Card::find($request->idCard);
+
+    if (!$activity) {
+        return response()->json(['message' => 'Actividad no encontrada'], 404);
+    }
+
+    // Actualizar el idList
+    $activity->idList = $request->idList;
+    $activity->save();
+
+    return response()->json(['message' => 'Actividad actualizada exitosamente']);
+}
+
     
 
 }

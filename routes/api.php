@@ -11,6 +11,8 @@ use App\Http\Controllers\ListController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\FilesController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CoordinatorController;
+
 
 
 use Illuminate\Http\Request;
@@ -47,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('getNotSeenComments', [WorkEnvController::class, 'getNotSeenComments']); //para obtener los comentarios no vistos
     Route::get('getPendingApprovals', [WorkEnvController::class, 'getPendingApprovals']); //para obtener las solicitudes pendientes
     Route::get('getPossibleRequests', [WorkEnvController::class, 'getPossibleRequests']); //para obtener las solicitudess de unión posibles de un user
-    Route::get('joinOnWorkEnv/{idWorkEnv}', [WorkEnvController::class, 'joinOnWorkEnv']); //para solicitar unirse a un entorno de trabajo.
+    Route::get('joinOnWorkEnv/{codeWork}', [WorkEnvController::class, 'joinOnWorkEnv']); //para solicitar unirse a un entorno de trabajo.
     Route::get('searchRequests/{text}', [WorkEnvController::class, 'searchRequests']); //para obtener resultados de búsqueda o filtro de solicitudes.
     Route::get('getPendingApprovals', [WorkEnvController::class, 'getPendingApprovals']); //para obtener las solicitudes pendientes del user.
     Route::post('getPhoto', [WorkEnvController::class, 'getPhoto']); //para obtener una foto del servidor.
@@ -56,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('getPendingApprovalsSearch/{searchTerm}', [WorkEnvController::class, 'getPendingApprovalsSearch']); //para buscar solicitudes pendientes.
     //Notificaciones
     Route::get('NotifyUserApprobedOrNot/{workenv}/{idUser}/{flag}', [WorkEnvController::class, 'NotifyUserApprobedOrNot']); //para notificar a el usuario vía correo y sistema que ha sido aceptado o rechazado en un entorno.
-    Route::get('NotifyUserNewRequest/{workenv}/{idUser}', [WorkEnvController::class, 'NotifyUserNewRequest']); //para notificar a el usuario vía correo y sistema sobre una nueva solicitud de unión a un entorno.
+    Route::get('NotifyUserNewRequest/{codeWork}', [WorkEnvController::class, 'NotifyUserNewRequest']); //para notificar a el usuario vía correo y sistema sobre una nueva solicitud de unión a un entorno.
     Route::get('getNotifications',[WorkEnvController::class, 'getNotifications']); //para obtener todas la notis de un user.
     Route::get('setSeenNotificationn/{idNoti}',[WorkEnvController::class, 'setSeenNotificationn']); //para indicar que la noti ha sido visto por el user.
     Route::get('countMyNotis',[WorkEnvController::class, 'countMyNotis']); //para contar las notis del user.
@@ -96,7 +98,10 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/getPossibleMembersByCard', [MembersController::class, 'getPossibleMembersByCard']); // devolver posibles miembros para ser asignados a una actividad.
     Route::post('/storeCardMembers', [MembersController::class, 'storeCardMembers']); // almacenar la asignacion de miembros y actividades.
     Route::post('/DeleteMemberByCard', [MembersController::class, 'DeleteMemberByCard']); // eliminar una asignación a un miembro.
-    
+    Route::get('/getMembersShareFile/{idWorkEnv}', [MembersController::class, 'getMembersShareFile']); // obtener miembros a los cuales se les puede compartir carpetas.
+    Route::get('/getMembersSharedFile/{idWorkEnv}/{idFolder}', [MembersController::class, 'getMembersSharedFile']); // obtener miembros a los cuales ya tienen carpeta compartida.
+
+
 
 
 
@@ -105,7 +110,12 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/getActivityLabels', [LabelController::class, 'getActivityLabels']); // obtener etiquetas de una actividad.
     Route::post('/getPossibleLabelsForActivity', [LabelController::class, 'getPossibleLabelsForActivity']); // obtener etiquetas posibles para ser utilizadas en una actividad.
     Route::post('/storeCardLabels', [LabelController::class, 'storeCardLabels']); // para etiquetar una actividad.
-    Route::post('/removeLabelFromAct', [LabelController::class, 'removeLabelFromAct']); // para remove una etiqueta de una actividad.
+    Route::post('/removeLabelFromAct', [LabelController::class, 'removeLabelFromAct']); // para remover una etiqueta de una actividad.
+    Route::post('/newLabel', [LabelController::class, 'newLabel']); // para crear una nueva etiqueta
+    Route::post('/editLabel', [LabelController::class, 'editLabel']); // para editar una  etiqueta
+    Route::post('/deleteLabel', [LabelController::class, 'deleteLabel']); // para eliminar una  etiqueta
+
+
 
 
     //CRUD Tableros
@@ -126,6 +136,9 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/newCard', [CardController::class, 'newCard']); // crear nueva actividad.
     Route::put('/updateCard', [CardController::class, 'updateCard']); // actualizar actividad.
     Route::post('/deleteCard', [CardController::class, 'deleteCard']); // eliminar logicamente actividad.
+    Route::post('/updateActivity', [CardController::class, 'updateActivity']); // guardar el estado de una actividad a otra lista.
+
+
 
     //CRUD Aprobacion de actividades
     Route::post('/endCard', [CardController::class, 'endCard']); // marcar como completada una actividad.
@@ -138,11 +151,41 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('/photos/{filename}', [FilesController::class, 'getPhoto']); //para descargar fotos de perfil
     Route::post('/storageEvidence', [FilesController::class, 'storageEvidence']);  //para almacenar evidencia de las actividades
     Route::get('/downloadEvidence/{file}', [FilesController::class, 'downloadEvidence']); //para descargar la evidencia de la actividad.
+    Route::post('/newFolder', [FilesController::class, 'newFolder']); //para agregar una carpeta.
+    Route::get('/getFolders/{idWorkEnv}', [FilesController::class, 'getFolders']); //obtener carpetas de entorno.
+    Route::post('/editFolder', [FilesController::class, 'editFolder']); //actualizar una carpeta.
+    Route::post('/deleteFolder', [FilesController::class, 'deleteFolder']); //eliminar una carpeta.
+    Route::post('/shareFile', [FilesController::class, 'shareFile']); //compartir la carpeta a varios miembros.
+    Route::post('/removeShare', [FilesController::class, 'removeShare']); //dejar de compartir una carpeta con miembros.
+
+
+    //CRUD Grupo de tareas de coordinador
+    Route::get('/getGroups/{idJoinUserWork}', [CoordinatorController::class, 'getGroups']); //para obtener los grupos de tareas de un coordinador
+    Route::get('/getActivitiesOfGroup/{idgrouptaskcl}', [CoordinatorController::class, 'getActivitiesOfGroup']); //para obtener las actividades de un grupo de tareas.
+    Route::post('/newGroup', [CoordinatorController::class, 'newGroup']); //para agregar un grupo de tareas.
+    Route::post('/editGroup', [CoordinatorController::class, 'editGroup']); //para editar un grupo de tareas.
+    Route::post('/deleteGroup', [CoordinatorController::class, 'deleteGroup']); //para eliminar un grupo de tareas.
+    Route::post('/newActCoordinator', [CoordinatorController::class, 'newActCoordinator']); //para  agregar un actividad de un grupo de tareas.
+    Route::post('/editActCoordinator', [CoordinatorController::class, 'editActCoordinator']); //para  editar un actividad de un grupo de tareas.
+    Route::post('/deleteActCoordinator', [CoordinatorController::class, 'deleteActCoordinator']); //para  eliminar un actividad de un grupo de tareas.
+
+
+
+
+
+
+
+
+
 
     //CRUD Comentarios
     Route::post('/getComments', [CommentController::class, 'getComments']); //para obtener los comentarios de una actividad de un entorno.
     Route::post('/deleteComment', [CommentController::class, 'deleteComment']); //para eliminar un comentario de una actividad.
     Route::post('/newComment', [CommentController::class, 'newComment']); //para agregar un comentario de una actividad.
+    Route::post('/editComment', [CommentController::class, 'editComment']); //actualizar comentario de una actividad.
+    Route::post('/setSeenComment', [CommentController::class, 'setSeenComment']); //marcar como vista el comentario.
+
+
 
 
 
