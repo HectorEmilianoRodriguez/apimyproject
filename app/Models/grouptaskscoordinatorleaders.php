@@ -12,7 +12,6 @@ class grouptaskscoordinatorleaders extends Model
     protected $primaryKey = 'idgrouptaskcl';
 
     protected $fillabe = [
-
         'idJoinUserWork',
         'name',
         'startdate',

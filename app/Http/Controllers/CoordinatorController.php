@@ -55,7 +55,7 @@ class CoordinatorController extends Controller
         $group = grouptaskscoordinatorleaders::find($request->input('idgrouptaskcl')); //se tiene que enviar la llave primaria de la tabla.
         $group->name = $request->input('name'); //nombre del grupo de tareas
         $group->startdate = $request->input('startdate'); //fecha de inicio del grupo de tareas
-        $group->enddate = $request->input('endate'); //fecha de fin del grupo de tareas.
+        $group->enddate = $request->input('enddate'); //fecha de fin del grupo de tareas.
         //la puedes obtener del método "getWorkEnv" del service "WorkEnvServiceM", ojo, es el service que he creado yo distinto al que has creado tú.
         $group->save(); ///guardar en la BD
         
