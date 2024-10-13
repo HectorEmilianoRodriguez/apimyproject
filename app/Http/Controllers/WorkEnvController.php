@@ -279,20 +279,18 @@ public function generalStats() {
 
     
         // Obtener entornos donde privilege es igual a 2
-        $results = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv')
+        $results = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv', 'cat_workenvs.logicdeleted')
         ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
         ->where('rel_join_workenv_users.idUser', $idUser)
         ->where('rel_join_workenv_users.privilege', 2)
         ->where('rel_join_workenv_users.approbed', 1)
         ->where('rel_join_workenv_users.logicdeleted', '!=', 1) 
-        ->where('cat_workenvs.logicdeleted', "!=", 1)
         ->get();
 
         // Obtener entornos donde privilege es diferente de 2
-        $results2 = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv')
+        $results2 = WorkEnv::select('cat_workenvs.nameW as title', 'cat_workenvs.type', 'cat_workenvs.descriptionW', 'cat_workenvs.date_start', 'cat_workenvs.date_end', 'rel_join_workenv_users.privilege', 'cat_workenvs.idWorkEnv', 'cat_workenvs.logicdeleted')
             ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
             ->where('rel_join_workenv_users.idUser', $idUser)
-            ->where('cat_workenvs.logicdeleted', "!=", 1)
             ->where('rel_join_workenv_users.approbed', 1)
             ->where('rel_join_workenv_users.privilege', '!=', 2) // Filtrar donde privilege no es igual a 2
             ->where('rel_join_workenv_users.logicdeleted', '!=', 1) 

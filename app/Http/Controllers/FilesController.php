@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Folder;
 use Illuminate\Support\Facades\DB;
 use App\Models\relsharedfiles;
+use App\Models\File;
 
 class FilesController extends Controller
 {
@@ -147,6 +148,92 @@ class FilesController extends Controller
         return response()->json(['message' => 'Deleted'], 201);
 
     }
+
+    public function getFolderInfo($idf, $idj){
+
+        $file = Folder::find($idf);
+        if(!$file){
+            return response()->json(['message' => 'none'], 404);
+        }
+
+        if(!relsharedfiles::where('idFolder', $idf)->where('idJoinUserWork',$idj)->where('logicdeleted', 0)->first()){
+            return response()->json(['message' => 'notshared'], 404);
+        }
+
+        return response()->json($file);
+        
+
+    }
+
+    public function uploadFile(Request $request) {
     
+        // Subir el archivo
+        if ($request->hasFile('file')) {
+            $uploadedFile = $request->file('file');
+            
+            // Generar un nombre único para el archivo
+            $filename = time() . '_' . $uploadedFile->getClientOriginalName();
+            
+            // Crear el nombre de la carpeta
+            $foldername = $request->input('nameF');
+    
+            // Guardar el archivo en la carpeta especificada dentro de 'private'
+            $path = $uploadedFile->storeAs("private/{$foldername}", $filename);
+    
+            // Crear un nuevo registro en la base de datos
+            $file = new File();
+            $file->nameA = $request->input('nameA');
+            $file->path = $foldername.'/'.$filename; // Ruta del archivo almacenada
+            $file->filesize = $uploadedFile->getSize();
+            $file->type = $uploadedFile->getClientOriginalExtension();
+            $file->idFolder = $request->input('idFolder'); // Relación con la carpeta
+            $file->logicdeleted = 0;
+            
+            // Guardar en la base de datos
+            $file->save();
+    
+            return response()->json(['message' => 'Archivo subido con éxito', 'file' => $file], 201);
+        }
+    
+        return response()->json(['message' => 'No se pudo subir el archivo'], 400);
+    }
+
+
+    public function getFilesByFolder(Request $request)
+{
+    // Obtener los archivos asociados a la carpeta
+    $files = File::where('idFolder', $request->input('idFolder'))->where('logicdeleted', 0)->get();
+
+    // Formatear los resultados
+    $fileData = $files->map(function ($file) {
+        return [
+            'idFile' => $file->idFile,
+            'name' => $file->nameA,
+            'created_at' => $file->created_at,
+            'filesize' => $file->filesize,
+            'type' => $file->type,
+            'link' => 'api/downloadFile/' . $file->path
+        ];
+    });
+
+    // Devolver la respuesta en formato JSON
+    return response()->json($fileData);
+}
+
+public function downloadFile($folderName, $fileName){
+    $path = storage_path('app/private/' . $folderName . '/' . $fileName);
+    if (file_exists($path)) {
+        return response()->file($path);
+    }
+    return response()->json(['error' => 'File not found'], 404);
+}
+
+public function deleteFile($idFile){
+    $file = File::find($idFile);
+    $file->logicdeleted = 1;
+    $file->save();
+    return response()->json(['message' => 'success'], 201);
+
+}
 
 }

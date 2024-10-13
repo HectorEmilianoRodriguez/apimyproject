@@ -17,4 +17,7 @@ class label extends Model
         'idWorkEnv',
         'logicdeleted'
     ];
+
+
+   
 }

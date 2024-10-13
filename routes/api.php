@@ -62,7 +62,7 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::get('getNotifications',[WorkEnvController::class, 'getNotifications']); //para obtener todas la notis de un user.
     Route::get('setSeenNotificationn/{idNoti}',[WorkEnvController::class, 'setSeenNotificationn']); //para indicar que la noti ha sido visto por el user.
     Route::get('countMyNotis',[WorkEnvController::class, 'countMyNotis']); //para contar las notis del user.
-
+    
 
 
 
@@ -157,6 +157,16 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
     Route::post('/deleteFolder', [FilesController::class, 'deleteFolder']); //eliminar una carpeta.
     Route::post('/shareFile', [FilesController::class, 'shareFile']); //compartir la carpeta a varios miembros.
     Route::post('/removeShare', [FilesController::class, 'removeShare']); //dejar de compartir una carpeta con miembros.
+    Route::get('/getFolderInfo/{idf}/{idj}', [FilesController::class, 'getFolderInfo']); //obtener datos de un archivo compartido.
+    Route::post('/uploadFile', [FilesController::class, 'uploadFile']); //guardar archivo en una carpeta específica.
+
+    Route::post('/getFilesByFolder', [FilesController::class, 'getFilesByFolder']); //obtener archivos de una carpeta.
+
+    Route::get('/downloadFile/{folderName}/{fileName}', [FilesController::class, 'downloadFile']); //descargar archivo.
+    Route::get('/deleteFile/{idFile}', [FilesController::class, 'deleteFile']); //eliminar archivo.
+
+
+
 
 
     //CRUD Grupo de tareas de coordinador

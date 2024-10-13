@@ -21,4 +21,10 @@ class activitycoordinatorleader extends Model
         'idgrouptaskcl',
         'idLabel'
     ];
+    
+    public function label()
+    {
+        return $this->belongsTo(label::class, 'idLabel', 'idLabel');
+    }
+   
 }

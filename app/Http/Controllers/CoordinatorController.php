@@ -20,15 +20,22 @@ class CoordinatorController extends Controller
 
     }
 
-    public function getActivitiesOfGroup($idgrouptaskcl){ //obtener todas las actividades de un grupo de tareas
-
-        $activities = activitycoordinatorleader::where('idgrouptaskcl', $idgrouptaskcl)->where('logicdeleted', 0)->get(); 
-        if($activities){
-            return response()->json(['message ' => 'none'], 404); //si no hay actividades de un grupod de tareas.
+    public function getActivitiesOfGroup($idgrouptaskcl)
+    {
+        $activities = activitycoordinatorleader::with('label')
+            ->where('idgrouptaskcl', $idgrouptaskcl)
+            ->where('logicdeleted', 0)
+            ->get();
+    
+        if ($activities->isEmpty()) {
+            return response()->json(['message' => 'none'], 404); 
         }
-        return response()->json($activities, 201);  //si encuentra actividades de un grupo, los enviará en formato JSON.
+    
+        return response()->json($activities, 200); 
+    
     }
 
+    
     public function newGroup(Request $request){ //crear un nuevo grupo de tareas de un coordinador.
 
         $group = new grouptaskscoordinatorleaders();
@@ -97,6 +104,10 @@ class CoordinatorController extends Controller
         $act->save();
         return response()->json(['message' => 'success'], 201); //indica que se ha eliminado.
     }
+
+    
+
+    
 
 
 }
