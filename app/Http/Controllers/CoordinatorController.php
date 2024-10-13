@@ -41,7 +41,7 @@ class CoordinatorController extends Controller
         $group = new grouptaskscoordinatorleaders();
         $group->name = $request->input('name'); //nombre del grupo de tareas
         $group->startdate = $request->input('startdate'); //fecha de inicio del grupo de tareas
-        $group->enddate = $request->input('endate'); //fecha de fin del grupo de tareas.
+        $group->enddate = $request->input('enddate'); //fecha de fin del grupo de tareas.
         $group->logicdeleted = 0; //borrado logico establecido como "no borrado"
         $group->idJoinUserWork = $request->input('idJoinUserWork'); //llave primaria de la tabla "rel_join_workenv_users", 
         //la puedes obtener del método "getWorkEnv" del service "WorkEnvServiceM", ojo, es el service que he creado yo distinto al que has creado tú.
