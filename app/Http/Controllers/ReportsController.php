@@ -51,7 +51,10 @@ class ReportsController extends Controller
     ->groupBy('users.name')
     ->first();
 
-
+    if (!$totalActivities) {
+        $totalActivities = (object) ['totalActivities' => 0]; // Inicializar como un objeto para evitar errores
+    }
+  
     $cardDetails = DB::table('users')
     ->join('rel_join_workenv_users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
     ->join('cat_workenvs', 'rel_join_workenv_users.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
@@ -474,6 +477,9 @@ public function DeliveryActivitiesReport(Request $request)
     ->groupBy('users.idUser')  // Agrupar por ID de usuario
     ->first();
 
+    if (!$totalActivities) {
+        $totalActivities = (object) ['totalActivities' => 0]; // Inicializar como un objeto para evitar errores
+    }
 
     if (!$totalActivities) {
         return response()->json(['error' => 'No activities found for the user'], 404);
@@ -705,6 +711,9 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
         ->groupBy('users.name')
         ->first();
 
+        if (!$totalActivities) {
+            $totalActivities = (object) ['totalActivities' => 0]; // Inicializar como un objeto para evitar errores
+        }
 
         $almostExpiredActivitiesCount = $almostExpired ? $almostExpired->AlmostExpiredOrExpiredActivities : 0;
         $totalActivitiesCount = $totalActivities ? $totalActivities->totalActivities : 0;
