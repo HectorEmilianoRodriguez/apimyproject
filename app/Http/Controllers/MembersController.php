@@ -223,7 +223,7 @@ public function storeCardMembers(Request $request)
         // Modificar las fotos para incluir la URL completa
         $users = $users->map(function ($user) {
             if ($user->photo) {
-                $user->photo = url('api/photos/' . $user->photo); // Genera la URL completa
+                $user->photo = url('api/' . $user->photo); // Genera la URL completa
             } else {
                 $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
             }
@@ -316,7 +316,7 @@ public function storeCardMembers(Request $request)
     $newjoin->privilege = 0;
     $newjoin->save();
 
-    return redirect()->away('https://localhost:4200/Invitation/invite');
+    return redirect()->away('http://localhost:4200/Invitation/invite');
 }
 
 

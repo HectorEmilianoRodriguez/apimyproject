@@ -197,6 +197,9 @@ Route::middleware('auth:sanctum')->group(function (){ //Manejar la sesión del u
 
 
 
+    //Lógica del waterfall
+    Route::post('/getCardsAsc', [CardController::class, 'getCardsAsc']); //para obtener las actividades de forma ascendente.
+    
 
 
     

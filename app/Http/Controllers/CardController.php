@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Notifications;
 use Illuminate\Notifications\Notification;
-
+use Illuminate\Support\Facades\DB;
 class CardController extends Controller
 {
     public function newCard(Request $request){
@@ -22,6 +22,28 @@ class CardController extends Controller
         $card->save();
         return response()->json(['message ' => 'success'], 200);
     }
+
+    public function getCardsAsc(Request $request)
+{
+    
+
+    // Obtener el parámetro idBoard desde la solicitud
+    $idBoard = $request->input('idBoard');
+
+    // Obtener las actividades asociadas al idBoard de forma ascendente según end_date
+    $cards = DB::table('cat_cards')
+        ->join('cat_lists', 'cat_cards.idList', '=', 'cat_lists.idList')
+        ->where('cat_lists.idBoard', '=', $idBoard)
+        ->where('cat_cards.logicdeleted', '!=', 1) // Suponiendo que 'logicdeleted' indica si la actividad está eliminada
+        ->orderBy('cat_cards.end_date', 'asc') // Ordenar por end_date ascendente
+        ->select('cat_cards.*') // Seleccionamos todas las columnas de cat_cards
+        ->get();
+
+    // Retornar los resultados
+    return response()->json($cards);
+}
+
+
 
     public function updateCard(Request $request){
         $card = Card::where('idCard', $request->input('idCard'))->first();
