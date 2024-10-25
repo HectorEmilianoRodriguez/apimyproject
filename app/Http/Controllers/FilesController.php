@@ -102,19 +102,19 @@ class FilesController extends Controller
     }
 
     public function getFolders($idWorkEnv)
-    {
-        $folders = DB::table('cat_folders')
-            ->select('cat_folders.nameF', 'cat_folders.created_at', 'cat_folders.idFolder')
-            ->join('rel_join_workenv_users', 'rel_join_workenv_users.idJoinUserWork', '=', 'cat_folders.idJoinUserWork')
-            ->join('cat_workenvs', 'rel_join_workenv_users.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
-            ->join('rel_sharedfolder_user', 'cat_folders.idJoinUserWork', '=', 'rel_sharedfolder_user.idJoinUserWork')
-            ->where('rel_sharedfolder_user.idJoinUserWork', $idWorkEnv)
-            ->where('rel_sharedfolder_user.logicdeleted', 0)
-            ->where('cat_folders.logicdeleted', 0)
-            ->get();
+{
+    $folders = DB::table('cat_folders')
+        ->select('cat_folders.nameF', 'cat_folders.created_at', 'cat_folders.idFolder')
+        ->join('rel_sharedfolder_user', 'cat_folders.idFolder', '=', 'rel_sharedfolder_user.idFolder') // Cambiar a LEFT JOIN
+        ->where('rel_sharedfolder_user.idJoinUserWork', $idWorkEnv)
+        ->where('rel_sharedfolder_user.logicdeleted', 0)
+        ->where('cat_folders.logicdeleted', 0)
+        ->get();
+
+    return response()->json($folders);
+}
+
     
-        return response()->json($folders);
-    }
 
     public function shareFile(Request $request) {
       

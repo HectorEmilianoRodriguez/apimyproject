@@ -112,6 +112,7 @@ class MembersController extends Controller
             } else {
                 $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
             }
+            
             return $user;
         });
     

@@ -35,12 +35,12 @@ class ReportsController extends Controller
     $User = User::find($request->input('idUser'));
     $nameUser = $User['name'];
 
-    // Obtener todas las actividades totales que posee el miembro
+ // Obtener todas las actividades totales que posee el miembro
     $totalActivities = DB::table('users')
     ->join('rel_join_workenv_users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
     ->join('cat_workenvs', 'rel_join_workenv_users.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
     ->join('cat_boards', 'cat_workenvs.idWorkEnv', '=', 'cat_boards.idWorkEnv')
-    ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
+    ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idList')
     ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
     ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
     ->select(DB::raw('COUNT(cat_cards.idCard) as totalActivities'))
@@ -48,8 +48,8 @@ class ReportsController extends Controller
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('rel_cards_users.logicdeleted', '!=', 1)
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
-    ->groupBy('users.name')
-    ->first();
+    ->first();  // Obtiene el primer resultado, ya que solo se cuenta para un usuario
+
 
     if (!$totalActivities) {
         $totalActivities = (object) ['totalActivities' => 0]; // Inicializar como un objeto para evitar errores
@@ -63,6 +63,7 @@ class ReportsController extends Controller
     ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
     ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
     ->select('cat_cards.idCard', 'cat_cards.nameC', 'cat_cards.descriptionC', 'cat_cards.important', 'cat_cards.end_date', 'cat_cards.done')
+    ->distinct()  // Elimina duplicados
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fecha
@@ -102,6 +103,7 @@ class ReportsController extends Controller
         ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
         ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
         ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
+        ->distinct()  // Elimina duplicados
         ->where('users.idUser', $request->input('idUser'))
         ->where('cat_workenvs.idWorkEnv', $request->input('idWorkEnv'))
         ->where('cat_cards.important', 1)
@@ -118,6 +120,7 @@ class ReportsController extends Controller
         ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
         ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
         ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
+        ->distinct()  // Elimina duplicados
         ->where('users.idUser', $request->input('idUser'))
         ->where('cat_workenvs.idWorkEnv', $request->input('idWorkEnv'))
         ->where('cat_cards.important', 0)
@@ -193,7 +196,7 @@ class ReportsController extends Controller
         'notimportantActivities' => $notimportantActivities,
         'pieChartBase64' => $pieChartBase64, // Gráfico de pastel de actividades completadas vs no completadas
         'date1' => $request->input('date1'),
-        'date2' => $request->input('date1')
+        'date2' => $request->input('date2')
     ];
 
     // Generar el PDF utilizando una vista
@@ -235,7 +238,7 @@ public function ProductivityReport(Request $request)
     ->whereRaw('DATEDIFF(cat_cards.updated_at, cat_cards.end_date) <= 0')  // Completadas antes de la fecha límite
     ->whereBetween('cat_cards.updated_at', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
     ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
-    ->count('cat_cards.idCard'); // Contar el número de actividades completadas
+    ->count(DB::raw('DISTINCT cat_cards.idCard'));  // Contar el número de actividades completadas sin duplicados
 
     
     $notcompletedActivities = DB::table('users')
@@ -247,12 +250,13 @@ public function ProductivityReport(Request $request)
     ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
     ->where('users.idUser', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', $request->input('idWorkEnv'))
-    ->where('cat_cards.done', 1)  // Actividades no completadas
+    ->where('cat_cards.done', 1)  // Actividades completadas
     ->where('cat_cards.approbed', 1)  // Actividades aprobadas
-    ->whereRaw('DATEDIFF(cat_cards.updated_at, cat_cards.end_date) > 0')  // No completadas después de la fecha límite
+    ->whereRaw('DATEDIFF(cat_cards.updated_at, cat_cards.end_date) > 0')  // No completadas antes de la fecha límite
     ->whereBetween('cat_cards.updated_at', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
     ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
-    ->count('cat_cards.idCard'); // Contar el número de actividades no completadas
+    ->count(DB::raw('DISTINCT cat_cards.idCard'));  // Contar el número de actividades no completadas sin duplicados
+
 
     
     // Datos para el gráfico de pastel de actividades completadas vs no completadas
@@ -297,6 +301,7 @@ public function ProductivityReport(Request $request)
         'cat_cards.updated_at',
         DB::raw('DATEDIFF(cat_cards.updated_at, cat_cards.end_date) as days_late')
     )
+    ->distinct()  // Elimina duplicados
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.done', 1)  // Actividades completadas
@@ -362,6 +367,7 @@ public function ProductivityReport(Request $request)
         DB::raw('COUNT(DISTINCT CASE WHEN DATEDIFF(cat_cards.updated_at, cat_cards.end_date) <= 0 THEN cat_cards.idCard END) as on_time'),
         DB::raw('COUNT(DISTINCT CASE WHEN DATEDIFF(cat_cards.updated_at, cat_cards.end_date) > 0 THEN cat_cards.idCard END) as late')
     )
+    ->distinct()  // Elimina duplicados
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.done', 1)  // Actividades completadas
@@ -453,11 +459,13 @@ public function DeliveryActivitiesReport(Request $request)
         'cat_cards.updated_at',
         DB::raw('DATEDIFF(cat_cards.end_date, NOW()) as left_days')
     )
+    ->distinct()  // Elimina duplicados
     ->where('users.idUser', '=', $idUser)
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.approbed', 0)  // Actividades no aprobadas
+    ->where('cat_cards.logicdeleted', 0)
+    ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente 
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])
-    ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
     ->get();
 
 
@@ -468,13 +476,12 @@ public function DeliveryActivitiesReport(Request $request)
     ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
     ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
     ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')  // Relación con rel_cards_users
-    ->select(DB::raw('COUNT(cat_cards.idCard) as totalActivities'))
+    ->select(DB::raw('COUNT(DISTINCT cat_cards.idCard) as totalActivities')) // Usar DISTINCT para evitar duplicados
     ->where('users.idUser', '=', $idUser)
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.approbed', 0)  // Actividades no aprobadas
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])
     ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
-    ->groupBy('users.idUser')  // Agrupar por ID de usuario
     ->first();
 
     if (!$totalActivities) {
@@ -485,32 +492,28 @@ public function DeliveryActivitiesReport(Request $request)
         return response()->json(['error' => 'No activities found for the user'], 404);
     }
 
-   // Obtener las actividades casi expiradas o expiradas desde rel_cards_users
-    $almostExpiredActivities = DB::table('rel_cards_users')
-    ->select(
-        'cat_workenvs.idWorkEnv AS idWorkEnv',
-        'cat_workenvs.nameW',
-        DB::raw('COUNT(DISTINCT CASE 
-                    WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 
-                        AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0
-                    OR cat_cards.end_date < NOW()
-                    THEN cat_cards.idCard 
-                END) AS AlmostExpiredOrExpiredActivities')
-    )
-    ->join('cat_cards', 'rel_cards_users.idCard', '=', 'cat_cards.idCard')
+    $almostExpiredActivities = DB::table('cat_cards')
     ->join('cat_lists', 'cat_cards.idList', '=', 'cat_lists.idList')
     ->join('cat_boards', 'cat_lists.idBoard', '=', 'cat_boards.idBoard')
     ->join('cat_workenvs', 'cat_boards.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
     ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
-    ->join('users', 'rel_join_workenv_users.idUser', '=', 'users.idUser')
-    ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
+    ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')  // Relación con rel_cards_users
+    ->where('rel_join_workenv_users.idUser', '=', $idUser)
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
-    ->where('users.idUser', '=', $idUser)
-    ->where('cat_workenvs.logicdeleted', '!=', 1)
     ->where('cat_cards.approbed', 0)
+    ->where('cat_cards.logicdeleted', 0)
+    ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])
-    ->groupBy('cat_workenvs.idWorkEnv', 'cat_workenvs.nameW')
+    ->select(
+        DB::raw('COUNT(DISTINCT cat_cards.idCard) as AlmostExpiredOrExpiredActivities')
+    )
+    ->where(function ($query) {
+        $query->whereRaw('DATEDIFF(cat_cards.end_date, NOW()) <= 7')
+              ->orWhereRaw('cat_cards.end_date < NOW()');
+    })
+    ->groupBy('cat_workenvs.idWorkEnv')
     ->first();
+
 
 
     $almostExpiredActivitiesCount = $almostExpiredActivities ? $almostExpiredActivities->AlmostExpiredOrExpiredActivities : 0;
@@ -554,18 +557,26 @@ public function DeliveryActivitiesReport(Request $request)
 
 
   // Contar actividades por fecha dentro del rango específico del entorno y del usuario
-    $activitiesByDate = DB::table('rel_cards_users')
-    ->join('cat_cards', 'rel_cards_users.idCard', '=', 'cat_cards.idCard')
+  $activitiesByDate = DB::table('cat_cards')
     ->join('cat_lists', 'cat_cards.idList', '=', 'cat_lists.idList')
     ->join('cat_boards', 'cat_lists.idBoard', '=', 'cat_boards.idBoard')
     ->join('cat_workenvs', 'cat_boards.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
-    ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv') // Join para el entorno
-    ->where('rel_join_workenv_users.idUser', $idUser) // Filtrar por el usuario
-    ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv')) // Filtrar por entorno
-    ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')]) // Rango de fechas
+    ->join('rel_join_workenv_users', 'cat_workenvs.idWorkEnv', '=', 'rel_join_workenv_users.idWorkEnv')
+    ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')  // Relación con rel_cards_users
+    ->where('rel_join_workenv_users.idUser', '=', $idUser)
+    ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
+    ->where('cat_cards.approbed', 0)
+    ->where('cat_cards.logicdeleted', 0)
+    ->where('rel_cards_users.logicdeleted', 0)
+    ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])
+    ->where('cat_cards.logicdeleted', 0) 
+    ->select(
+        DB::raw('DATE(cat_cards.end_date) as delivery_date'),
+        DB::raw('COUNT(DISTINCT cat_cards.idCard) as task_count')
+    )
     ->groupBy(DB::raw('DATE(cat_cards.end_date)'))
-    ->select(DB::raw('DATE(cat_cards.end_date) as delivery_date'), DB::raw('COUNT(*) as task_count'))
     ->get();
+
 
 
 
@@ -669,6 +680,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
       ->where('users.iduser', '=', $idUser)
       ->where('cat_workenvs.idworkenv', '=',  $request->input('idWorkEnv'))
       ->where('cat_activity_coordinatorleaders.done', 0)
+      ->where('cat_activity_coordinatorleaders.logicdeleted', 0)
       ->whereBetween('cat_activity_coordinatorleaders.end_date', [$request->input('date1'), $request->input('date2')])
       ->get();
 
@@ -691,6 +703,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
         ->where('users.iduser', '=', $idUser)
         ->where('cat_workenvs.idworkenv', '=',  $request->input('idWorkEnv'))
         ->where('cat_activity_coordinatorleaders.done', 0)
+        ->where('cat_activity_coordinatorleaders.logicdeleted', 0)
         ->whereBetween('cat_activity_coordinatorleaders.end_date', [$request->input('date1'), $request->input('date2')])
         ->groupBy('users.name')
         ->first();
@@ -767,6 +780,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
     ->where('users.iduser', '=', $idUser)
     ->where('cat_workenvs.idworkenv', '=', $request->input('idWorkEnv'))
     ->where('cat_activity_coordinatorleaders.done', 0)
+    ->where('cat_activity_coordinatorleaders.logicdeleted', 0)
     ->whereBetween('cat_activity_coordinatorleaders.end_date', [$request->input('date1'), $request->input('date2')])
     ->groupBy(DB::raw('DATE(cat_activity_coordinatorleaders.end_date)'))
     ->get();
@@ -858,8 +872,10 @@ public function PendingActivitiesReport(Request $request)
         ->whereIn('users.idUser', $idUsers)
         ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv)
         ->where('cat_cards.approbed', 0)
+        ->where('cat_cards.logicdeleted', 0)
+        ->where('cat_cards.done', 0)  // Actividades no completadas
+        ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
         ->whereBetween('cat_cards.end_date', [$date1, $date2])
-        ->where('rel_cards_users.logicdeleted', '!=', 1)
         ->groupBy('users.idUser', 'users.name')
         ->get();
 
@@ -883,6 +899,7 @@ public function PendingActivitiesReport(Request $request)
     ->whereIn('users.idUser', $idUsers) // Filtrar por los usuarios específicos
     ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv) // Filtrar por el entorno de trabajo
     ->where('cat_cards.approbed', 0)    // Solo actividades no aprobadas
+    ->where('cat_cards.done', 0)  // Actividades no completadas
     ->whereBetween('cat_cards.end_date', [$date1, $date2]) // Filtrar por el rango de fechas
     ->where('rel_cards_users.logicdeleted', '!=', 1) // Excluir actividades eliminadas lógicamente
     ->groupBy(DB::raw('DATE(cat_cards.end_date)')) // Agrupar por fecha de entrega
@@ -980,6 +997,7 @@ public function PendingActivitiesReport(Request $request)
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.done', 0)  // Actividades no completadas
     ->where('cat_cards.approbed', 0)  // Actividades no aprobadas
+    ->where('cat_cards.logicdeleted', 0)  
     ->whereIn('users.idUser', $idUsers)
     ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
     ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente
@@ -1008,7 +1026,6 @@ public function PendingActivitiesReport(Request $request)
         $date1 = $request->input('date1');
         $date2 = $request->input('date2');
     
-        // Obtener el total de actividades pendientes de cada usuario
         $totalActivities = DB::table('users')
             ->join('rel_join_workenv_users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
             ->join('cat_workenvs', 'rel_join_workenv_users.idWorkEnv', '=', 'cat_workenvs.idWorkEnv')
@@ -1016,22 +1033,23 @@ public function PendingActivitiesReport(Request $request)
             ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
             ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
             ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
-            ->select('users.name', DB::raw('COUNT(cat_cards.idCard) as totalActivities'))
+            ->select('users.name', DB::raw('COUNT(DISTINCT cat_cards.idCard) as totalActivities'))  // Usar COUNT(DISTINCT) para evitar duplicados
             ->whereIn('users.idUser', $idUsers)
             ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv)
             ->where('cat_cards.done', 1)
+            ->where('cat_cards.logicdeleted', 0)  
             ->where('cat_cards.approbed', 1)
             ->whereBetween('cat_cards.end_date', [$date1, $date2])
             ->where('rel_cards_users.logicdeleted', '!=', 1)
             ->groupBy('users.idUser', 'users.name')
             ->get();
-    
-    
-    
+
+            
+            
+            
         $userNames = $totalActivities->pluck('name')->toArray();
         $activityCounts = $totalActivities->pluck('totalActivities')->toArray();
     
-       // Obtener las actividades pendientes por fecha de entrega
         $activitiesByDate = DB::table('cat_cards')
         ->join('cat_lists', 'cat_cards.idList', '=', 'cat_lists.idList')
         ->join('cat_boards', 'cat_lists.idBoard', '=', 'cat_boards.idBoard')
@@ -1041,16 +1059,18 @@ public function PendingActivitiesReport(Request $request)
         ->join('users', 'rel_join_workenv_users.idUser', '=', 'users.idUser') // Obtener el usuario
         ->select(
             DB::raw('DATE(cat_cards.end_date) as delivery_date'), // Fecha de entrega
-            DB::raw('COUNT(cat_cards.idCard) as task_count')      // Contar actividades
+            DB::raw('COUNT(DISTINCT cat_cards.idCard) as task_count') // Contar actividades sin duplicar
         )
         ->whereIn('users.idUser', $idUsers) // Filtrar por los usuarios específicos
         ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv) // Filtrar por el entorno de trabajo
-        ->where('cat_cards.approbed', 1)
-        ->where('cat_cards.done', 1)        // Solo actividades no aprobadas
+        ->where('cat_cards.approbed', 1)    // Solo actividades aprobadas
+        ->where('cat_cards.done', 1)        // Solo actividades completadas
+        ->where('cat_cards.logicdeleted', 0)   
         ->whereBetween('cat_cards.end_date', [$date1, $date2]) // Filtrar por el rango de fechas
         ->where('rel_cards_users.logicdeleted', '!=', 1) // Excluir actividades eliminadas lógicamente
         ->groupBy(DB::raw('DATE(cat_cards.end_date)')) // Agrupar por fecha de entrega
         ->get();
+    
     
     
     
@@ -1141,9 +1161,11 @@ public function PendingActivitiesReport(Request $request)
             'cat_cards.updated_at',
             DB::raw('DATEDIFF(cat_cards.updated_at, cat_cards.end_date) as days_late')
         )
+        ->distinct()  // Elimina duplicados
         ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
         ->where('cat_cards.done', 1)  // Actividades no completadas
         ->where('cat_cards.approbed', 1)  // Actividades no aprobadas
+        ->where('cat_cards.logicdeleted', 0)  
         ->whereIn('users.idUser', $idUsers)
         ->whereBetween('cat_cards.end_date', [$request->input('date1'), $request->input('date2')])  // Rango de fechas
         ->where('rel_cards_users.logicdeleted', '!=', 1)  // Excluir tarjetas eliminadas lógicamente

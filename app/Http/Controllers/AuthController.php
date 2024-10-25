@@ -17,37 +17,34 @@ use Illuminate\Support\Facades\Storage;
 class AuthController extends Controller
 {
     
-    public function register(Request $request){ //se registra un nuevo usuario sin verificar su cuenta
-
+    public function register(Request $request){
+     /* método que registra un nuevo usuario sin verificar su cuenta.
+        Recibe como parámetro un objeto 'request', dicho
+        objeto pertenece al framework Laravel y permite la obtención 
+        de datos enviados desde el frontend en formato JSON.
+    */
         
-        $exists = User::where("name", $request->input('name'))->first(); //Hay que validar si ya existe ese nombre de usuario registrado previamente
+        $exists = User::where("name", $request->input('name'))->first(); 
+        //Hay que validar si ya existe ese nombre de usuario registrado previamente
 
-
-        $token = Str::random(80); //generamos un token básico para que el usuario pueda verificar su cuenta vía correo.
-
+        $token = Str::random(80); 
+        //generamos un token básico para que el usuario pueda verificar su cuenta vía correo.
 
         if($exists){ //si existe, no lo registramos y notificamos
-        
             return response()->json(["message" => "ya existe ese usuario"]);
         }else{ //no existe, entonces creamos el usuario y enviamos el correo.
-
             $user = User::create([
                 'name' => $request->input('name'),
                 'email' => $request->input('email'),
-                'password' => Hash::make($request->input('password')), //calculamos la función hash o de resumen en las contraseñas.
+                'password' => Hash::make($request->input('password')),
                 'verified' => 0,
                 'token' => $token
-            ]);
+            ]); //calculamos la función hash o de resumen en las contraseñas.
             //eloquent
-
-            Mail::to($request->input('email'))->send(new VerifyMailable($request->input('name'), $token)); //enviar correo electrónico para verificar la cuenta del usuario
-        
+            Mail::to($request->input('email'))->send(new VerifyMailable($request->input('name'), $token)); 
+            //enviar correo electrónico para verificar la cuenta del usuario
             return response()->json(["message" => "success"]);
         }
-
-
-
-        
     }
 
     public function verify($token)
