@@ -12,7 +12,7 @@ use App\Http\Controllers\CardController;
 use App\Http\Controllers\FilesController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CoordinatorController;
-
+use App\Http\Controllers\CalendarController;
 
 
 use Illuminate\Http\Request;
@@ -207,8 +207,15 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/deleteActCoordinator', [CoordinatorController::class, 'deleteActCoordinator']); //para  eliminar un actividad de un grupo de tareas.
 
 
-
-
+    //Calendario de actividades
+    Route::post('/Calendar/newActivity', [CalendarController::class, 'newActivity']); 
+    //agregar nueva actividad.
+    Route::post('/Calendar/editActivity', [CalendarController::class, 'editActivity']); 
+    //editar actividad.
+    Route::post('/Calendar/deleteActivity', [CalendarController::class, 'deleteActivity']); 
+    //eliminar actividad.
+    Route::post('/Calendar/getActivities', [CalendarController::class, 'getActivities']); 
+    //obtener actividades de un miembro.
 
 
 
