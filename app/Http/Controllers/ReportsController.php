@@ -43,7 +43,7 @@ class ReportsController extends Controller
     ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idList')
     ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
     ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
-    ->select(DB::raw('COUNT(cat_cards.idCard) as totalActivities'))
+    ->select(DB::raw('COUNT(DISTINCT cat_cards.idCard) as totalActivities'))
     ->where('users.idUser', '=', $request->input('idUser'))
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('rel_cards_users.logicdeleted', '!=', 1)
@@ -86,7 +86,7 @@ class ReportsController extends Controller
         ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
         ->join('rel_card_labels', 'cat_cards.idCard', '=', 'rel_card_labels.idCard')
         ->join('cat_labels', 'rel_card_labels.idLabel', '=', 'cat_labels.idLabel')
-        ->select(DB::raw('count(cat_labels.idLabel) as TotalLabel'), 'cat_labels.nameL')
+        ->select(DB::raw('count(DISTINCT cat_labels.idLabel) as TotalLabel'), 'cat_labels.nameL')
         ->whereIn('cat_cards.idCard', $idCards)
         ->whereIn('cat_labels.idLabel', $idLabels)
         ->where('users.idUser', '=', $request->input('idUser'))
@@ -681,6 +681,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
       ->where('cat_workenvs.idworkenv', '=',  $request->input('idWorkEnv'))
       ->where('cat_activity_coordinatorleaders.done', 0)
       ->where('cat_activity_coordinatorleaders.logicdeleted', 0)
+      ->distinct()
       ->whereBetween('cat_activity_coordinatorleaders.end_date', [$request->input('date1'), $request->input('date2')])
       ->get();
 
@@ -700,6 +701,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
                         THEN cat_activity_coordinatorleaders.idactivitycl
                     END) AS AlmostExpiredOrExpiredActivities')
         )
+        ->distinct()
         ->where('users.iduser', '=', $idUser)
         ->where('cat_workenvs.idworkenv', '=',  $request->input('idWorkEnv'))
         ->where('cat_activity_coordinatorleaders.done', 0)
@@ -717,9 +719,11 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
             DB::raw('COUNT(cat_activity_coordinatorleaders.idactivitycl)
                      AS totalActivities')
         )
+        ->distinct()
         ->where('users.iduser', '=', $idUser)
         ->where('cat_workenvs.idworkenv', '=', $request->input('idWorkEnv'))
         ->where('cat_activity_coordinatorleaders.done', 0)
+        ->where('cat_activity_coordinatorleaders.logicdeleted', 0)
         ->whereBetween('cat_activity_coordinatorleaders.end_date', [$request->input('date1'), $request->input('date2')])
         ->groupBy('users.name')
         ->first();
@@ -777,6 +781,7 @@ public function DeliveryActivitiesReportCoordinator(Request $request){
         DB::raw('DATE(cat_activity_coordinatorleaders.end_date) as delivery_date'),
         DB::raw('COUNT(cat_activity_coordinatorleaders.idactivitycl) as activity_count')
     )
+    ->distinct()
     ->where('users.iduser', '=', $idUser)
     ->where('cat_workenvs.idworkenv', '=', $request->input('idWorkEnv'))
     ->where('cat_activity_coordinatorleaders.done', 0)
@@ -868,7 +873,8 @@ public function PendingActivitiesReport(Request $request)
         ->join('cat_lists', 'cat_boards.idBoard', '=', 'cat_lists.idBoard')
         ->join('cat_cards', 'cat_lists.idList', '=', 'cat_cards.idList')
         ->join('rel_cards_users', 'cat_cards.idCard', '=', 'rel_cards_users.idCard')
-        ->select('users.name', DB::raw('COUNT(cat_cards.idCard) as totalActivities'))
+        ->select('users.name', DB::raw('COUNT(DISTINCT cat_cards.idCard) as totalActivities')) 
+        ->distinct()
         ->whereIn('users.idUser', $idUsers)
         ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv)
         ->where('cat_cards.approbed', 0)
@@ -894,8 +900,9 @@ public function PendingActivitiesReport(Request $request)
     ->join('users', 'rel_join_workenv_users.idUser', '=', 'users.idUser') // Obtener el usuario
     ->select(
         DB::raw('DATE(cat_cards.end_date) as delivery_date'), // Fecha de entrega
-        DB::raw('COUNT(cat_cards.idCard) as task_count')      // Contar actividades
+        DB::raw('COUNT(DISTINCT cat_cards.idCard) as task_count')      // Contar actividades
     )
+    ->distinct()
     ->whereIn('users.idUser', $idUsers) // Filtrar por los usuarios específicos
     ->where('cat_workenvs.idWorkEnv', '=', $idWorkEnv) // Filtrar por el entorno de trabajo
     ->where('cat_cards.approbed', 0)    // Solo actividades no aprobadas
@@ -906,7 +913,7 @@ public function PendingActivitiesReport(Request $request)
     ->get();
 
 
-
+ 
     $dates = $activitiesByDate->pluck('delivery_date')->toArray();
     $tasksByDate = $activitiesByDate->pluck('task_count')->toArray();
 
@@ -994,6 +1001,7 @@ public function PendingActivitiesReport(Request $request)
         'cat_cards.updated_at',
         DB::raw('DATEDIFF(cat_cards.end_date, NOW()) as left_days')
     )
+    ->distinct()
     ->where('cat_workenvs.idWorkEnv', '=', $request->input('idWorkEnv'))
     ->where('cat_cards.done', 0)  // Actividades no completadas
     ->where('cat_cards.approbed', 0)  // Actividades no aprobadas

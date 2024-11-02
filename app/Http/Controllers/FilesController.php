@@ -104,7 +104,7 @@ class FilesController extends Controller
     public function getFolders($idWorkEnv)
 {
     $folders = DB::table('cat_folders')
-        ->select('cat_folders.nameF', 'cat_folders.created_at', 'cat_folders.idFolder')
+        ->select('cat_folders.nameF', 'cat_folders.created_at', 'cat_folders.idFolder', 'rel_sharedfolder_user.idShareFile')
         ->join('rel_sharedfolder_user', 'cat_folders.idFolder', '=', 'rel_sharedfolder_user.idFolder') // Cambiar a LEFT JOIN
         ->where('rel_sharedfolder_user.idJoinUserWork', $idWorkEnv)
         ->where('rel_sharedfolder_user.logicdeleted', 0)
