@@ -125,7 +125,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/getPossibleMembersByCard', [MembersController::class, 'getPossibleMembersByCard']); // devolver posibles miembros para ser asignados a una actividad.
     Route::post('/storeCardMembers', [MembersController::class, 'storeCardMembers']); // almacenar la asignacion de miembros y actividades.
     Route::post('/DeleteMemberByCard', [MembersController::class, 'DeleteMemberByCard']); // eliminar una asignación a un miembro.
-    Route::get('/getMembersShareFile/{idWorkEnv}', [MembersController::class, 'getMembersShareFile']); // obtener miembros a los cuales se les puede compartir carpetas.
+    Route::post('/getMembersShareFile', [MembersController::class, 'getMembersShareFile']); // obtener miembros a los cuales se les puede compartir carpetas.
     Route::get('/getMembersSharedFile/{idWorkEnv}/{idFolder}', [MembersController::class, 'getMembersSharedFile']); // obtener miembros a los cuales ya tienen carpeta compartida.
 
 

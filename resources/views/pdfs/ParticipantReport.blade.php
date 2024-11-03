@@ -79,7 +79,7 @@
             <img src="{{ public_path('images/logo.png') }}" alt="LogoUpemor">
             <h1>Reporte de participación de {{$user}}</h1>
         </div>
-        <h2>Actividades asignadas ({{$totalActivities->totalActivities}}) periodo {{$date1}} - {{$date2}}:</h2>
+        <h2>Actividades asignadas periodo {{$date1}} - {{$date2}}:</h2>
     </div>
 
     <table class="table">

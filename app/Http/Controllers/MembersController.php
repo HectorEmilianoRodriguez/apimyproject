@@ -53,36 +53,40 @@ class MembersController extends Controller
 
     }
 
-    public function getMembersShareFile($idWorkEnv) {
+    public function getMembersShareFile(Request $request) {
+        $idFolder = $request->input('idFolder');
+        $idWorkEnv = $request->input('idWorkEnv');
         $members = DB::table('rel_join_workenv_users')
-            ->select(
-                'users.idUser',
-                'users.name',
-                'users.email',
-                'users.photo',
-                'rel_join_workenv_users.privilege',
-                'rel_join_workenv_users.created_at as date',
-                'rel_join_workenv_users.idJoinUserWork'
-            )
-            ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
-            ->leftJoin('rel_sharedfolder_user', 'rel_sharedfolder_user.idJoinUserWork', '=', 'rel_join_workenv_users.idJoinUserWork')
-            ->where('rel_join_workenv_users.idWorkEnv', $idWorkEnv)
-            ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
-            ->where('rel_join_workenv_users.approbed', '=', 1)
-            ->whereNull('rel_sharedfolder_user.idJoinUserWork') // Filtrar para obtener solo los que NO están en rel_sharedfolder_user
-            ->get();
-    
-        // Modificar las fotos para incluir la URL completa
-        $members = $members->map(function ($user) {
-            if ($user->photo) {
-                $user->photo = url('api/' . $user->photo); // Genera la URL completa
-            } else {
-                $user->photo = url('api/photos/test.jpg'); // Imagen por defecto
-            }
-            return $user;
-        });
-    
-        return $members;
+        ->select(
+            'users.idUser',
+            'users.name',
+            'users.email',
+            'users.photo',
+            'rel_join_workenv_users.privilege',
+            'rel_join_workenv_users.created_at as date',
+            'rel_join_workenv_users.idJoinUserWork'
+        )
+        ->join('users', 'users.idUser', '=', 'rel_join_workenv_users.idUser')
+        ->leftJoin('rel_sharedfolder_user', function($join) use ($idFolder) {
+            $join->on('rel_sharedfolder_user.idJoinUserWork', '=', 'rel_join_workenv_users.idJoinUserWork')
+                 ->where('rel_sharedfolder_user.idFolder', '=', $idFolder)
+                 ->where('rel_sharedfolder_user.logicdeleted', '=', 0);
+        })
+        ->where('rel_join_workenv_users.idWorkEnv', $idWorkEnv)
+        ->where('rel_join_workenv_users.logicdeleted', '!=', 1)
+        ->where('rel_join_workenv_users.approbed', '=', 1)
+        ->whereNull('rel_sharedfolder_user.idFolder') // Asegura que el usuario no tenga acceso a la carpeta
+        ->get();
+
+    // Modificar las fotos para incluir la URL completa
+    $members = $members->map(function ($user) {
+        $user->photo = $user->photo 
+            ? url('api/' . $user->photo)
+            : url('api/photos/test.jpg'); // Imagen por defecto
+        return $user;
+    });
+
+    return $members;
     }
     
     public function getMembersSharedFile($idWorkEnv, $idFolder) {
