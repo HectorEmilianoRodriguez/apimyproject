@@ -41,13 +41,20 @@ class CalendarController extends Controller
         return response()->json(["success" => 'updated'], 202);
     }
 
-    public function getActivities($idJoinUserWork){  //este campo 'idJoinUserWork' lo obtienes de la route AmIOnWorkEnv (ver api.php)
+    
 
-        $acts = Calendar::where('idJoinUserWork', $idJoinUserWork)->where('logicdeleted', 0)->get();
-        if(!$acts){
-            return response()->json(['message' => 'none'], 404); //en caso de que no haya ninguna actividad en el calendario de ese usuario.
+    public function getActivities($idJoinUserWork) {
+        // Obtener todas las actividades que coinciden con idJoinUserWork y que no están marcadas como eliminadas
+        $acts = Calendar::where('idJoinUserWork', $idJoinUserWork)
+                        ->where('logicdeleted', 0)
+                        ->get();
+
+        // Verificar si no hay actividades
+        if ($acts->isEmpty()) {
+            return response()->json(['message' => 'none'], 404); // En caso de que no haya ninguna actividad
         }
-        return response()->json($acts, 202);
+
+        return response()->json($acts, 200); // Devuelve las actividades con un código 200
     }
 
 
