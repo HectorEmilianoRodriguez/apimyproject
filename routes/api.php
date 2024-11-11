@@ -216,6 +216,8 @@ Route::middleware('auth:sanctum')->group(function (){
     //eliminar actividad.
     Route::get('/Calendar/getActivities/{idJoinUserWork}', [CalendarController::class, 'getActivities']); 
     //obtener actividades de un miembro.
+    Route::post('/Calendar/setDoneActivity', [CalendarController::class, 'setDoneActivity']); 
+    Route::post('/Calendar/setunDoneActivity', [CalendarController::class, 'setunDoneActivity']); 
 
 
 

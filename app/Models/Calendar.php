@@ -17,7 +17,9 @@ class Calendar extends Model
         'start',
         'end',
         'logicdeleted',
-        'idJoinUserWork'
+        'idJoinUserWork',
+        'done',
+        'idCalendarEvent'
     ];
 
 }

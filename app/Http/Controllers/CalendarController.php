@@ -17,6 +17,7 @@ class CalendarController extends Controller
         $act->start = $request->input('start');
         $act->end = $request->input('end');
         $act->idJoinUserWork = $request->input('idJoinUserWork'); 
+        $act->done = $request->input('done');
         //este campo 'idJoinUserWork' lo obtienes de la route AmIOnWorkEnv (ver api.php)
         $act->logicdeleted = 0;
         $act->save();
@@ -30,6 +31,7 @@ class CalendarController extends Controller
         $act->color = $request->input('color');
         $act->start = $request->input('start');
         $act->end = $request->input('end');
+        $act->done = $request->input('done');
         $act->save();
         return response()->json(["success" => 'updated'], 202);
     }
@@ -55,6 +57,20 @@ class CalendarController extends Controller
         }
 
         return response()->json($acts, 200); // Devuelve las actividades con un código 200
+    }
+
+    public function setDoneActivity(Request $request){
+        $act = Calendar::find($request->input('idCalendarEvent')); //se edita a través de la ID.
+        $act->done = 1;
+        $act->save();
+        return response()->json(["success" => 'updated'], 202);
+    }
+
+    public function setunDoneActivity(Request $request){
+        $act = Calendar::find($request->input('idCalendarEvent')); //se edita a través de la ID.
+        $act->done = 0;
+        $act->save();
+        return response()->json(["success" => 'updated'], 202);
     }
 
 

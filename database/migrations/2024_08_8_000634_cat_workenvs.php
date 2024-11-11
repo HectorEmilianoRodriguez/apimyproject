@@ -192,11 +192,11 @@ return new class extends Migration
             $table->string('color', 45)->nullable();
             $table->date('start')->nullable();
             $table->date('end')->nullable();
+            $table->integer('done')->nullable();
             $table->integer('logicdeleted')->nullable();
             $table->unsignedBigInteger('idJoinUserWork');
             $table->foreign('idJoinUserWork')->references('idJoinUserWork')->on('rel_join_workenv_users')->onDelete('cascade');
             $table->timestamps();
-
         });
 
         Schema::create('cat_folders', function (Blueprint $table) {
