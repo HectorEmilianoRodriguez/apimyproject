@@ -184,7 +184,7 @@ class ReportsController extends Controller
 
     $chartBase64 = base64_encode($response->body());
 
-
+    //.
     // Preparar la data a enviar a la vista
     $data = [
         'user' => $nameUser,
