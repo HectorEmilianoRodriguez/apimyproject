@@ -115,7 +115,7 @@ public function getAllStatsUser() {
     $results = DB::table('cat_workenvs')
         ->select(
             DB::raw('
-                COUNT(DISTINCT CASE WHEN cat_comments.seen = 0 THEN cat_comments.idComment END) AS NotSeenComments
+                COUNT(DISTINCT CASE WHEN cat_comments.seen = 0 AND cat_comments.logicdeleted = 0 THEN cat_comments.idComment END) AS NotSeenComments
             '),
             DB::raw('
                 COUNT(DISTINCT CASE WHEN rel_join_workenv_users.approbed = 0 THEN rel_join_workenv_users.idJoinUserWork END) AS requests
@@ -124,13 +124,14 @@ public function getAllStatsUser() {
                 COUNT(DISTINCT CASE 
                     WHEN TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) <= 7 
                          AND TIMESTAMPDIFF(DAY, cat_cards.end_date, NOW()) >= 0
+                         AND cat_cards.logicdeleted = 0
                     OR cat_cards.end_date < NOW()
                     THEN cat_cards.idCard 
                 END) AS AlmostExpiredOrExpiredActivities
             '),
             DB::raw('
                 COUNT(DISTINCT CASE 
-                    WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 THEN cat_cards.idCard 
+                    WHEN cat_cards.done = 1 AND cat_cards.approbed = 0 AND cat_cards.logicdeleted = 0 THEN cat_cards.idCard 
                 END) AS PendingApprovalActivities
             ')
         )
